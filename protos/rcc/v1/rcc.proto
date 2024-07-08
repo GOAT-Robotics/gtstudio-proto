@@ -111,8 +111,9 @@ message AuthResponse {
 }
 
 message SpecsRequest {
-  model.DeviceSpecifications specifications = 1;
-  string device_id = 2;
+  string device_id = 1;
+  model.DeviceSpecifications specifications = 2;
+  string ros_config = 3;
 }
 
 message SpecsResponse {
