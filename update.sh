@@ -5,7 +5,7 @@
 # - Add to git, commit, update version, create tag, push both tag and commit.
 # - Also updates the proto dependency to latest in your local repo both agent and rcc server. (Change the path to your local path)
 
-version=86
+version=87
 old_version=$version
 
 echo -e '\033[4;32;1mGenerating Proto Code\033[m'
@@ -33,4 +33,3 @@ go mod tidy
 
 sed -i "s/version=$old_version/version=$version/g" /home/anand/go/src/github.com/TeamDotworld/robotix-proto/update.sh
 echo -e '\033[4;32;1mDone!\033[m'
-
