@@ -19,7 +19,7 @@ version=$((version+1))
 echo "Creating a tag - v1.0.$version"
 git tag "v1.0.$version"
 echo -e '\033[4;32;1mPushing Code To Github\033[m'
-git push origin develop
+git push
 git push --tags
 echo -e '\033[4;32;1mUpdating Go Repository\033[m'
 
