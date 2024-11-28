@@ -14,7 +14,7 @@ service FleetManager {
 
     rpc HerdTelemetry(stream HerdTelemetryReqest) returns (HerdTelemetryResponse) {} // HerdIQ -> Fleet manager -> GT-server
 
-    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {} 
+    rpc HealthCheck(stream HealthCheckRequest) returns (stream HealthCheckResponse) {}
 
     rpc DockerStatsTelemetry(DockerTelemetryRequest) returns (stream DockerTelemetryResponse) {}
 
