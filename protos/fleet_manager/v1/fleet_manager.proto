@@ -10,11 +10,11 @@ service FleetManager {
 
     rpc HerdServices(HerdServiceRequest) returns (HerdServiceResponse) {}  // GT-server to fleet manager
 
-    rpc RobotTelemetry(stream RobotTelemetryData) returns (stream RobotTelemetryResponse) {} // Fleet manager (GT-server and each Docker service)
+    rpc RobotTelemetry(stream RobotTelemetryData) returns (RobotTelemetryResponse) {} // Fleet manager (GT-server and each Docker service)
 
-    rpc HerdTelemetry(stream HerdTelemetryReqest) returns (stream HerdTelemetryResponse) {} // HerdIQ -> Fleet manager -> GT-server
+    rpc HerdTelemetry(HerdTelemetryReqest) returns (stream HerdTelemetryResponse) {} // HerdIQ -> Fleet manager -> GT-server
 
-    rpc HealthCheck(stream HealthCheckRequest) returns (stream HealthCheckResponse) {} 
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {} 
 
     rpc DockerStatsTelemetry(DockerTelemetryRequest) returns (stream DockerTelemetryResponse) {}
 
