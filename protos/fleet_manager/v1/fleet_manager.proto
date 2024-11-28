@@ -6,15 +6,15 @@ option go_package = "github.com/TeamDotworld/robotix-proto/protos/v1/fleet_manag
 
 service FleetManager {
 
-    rpc CommandStream(stream CommandSteamRequest) returns (stream CommandSteamRespose) {} // Fleet manager (GT-server and each Docker service)
+    rpc HerdCommandStream(stream CommandSteamRequest) returns (stream CommandSteamRespose) {} // Fleet manager (GT-server and each Docker service)
 
     rpc HerdServices(HerdServiceRequest) returns (HerdServiceResponse) {}  // GT-server to fleet manager
 
-    rpc RobotTelemetry(RobotTelemetryData) returns (stream RobotTelemetryResponse) {} // Fleet manager (GT-server and each Docker service)
+    rpc HerdRobotTelemetry(RobotTelemetryData) returns (stream RobotTelemetryResponse) {} // Fleet manager (GT-server and each Docker service)
 
     rpc HerdTelemetry(stream HerdTelemetryReqest) returns (HerdTelemetryResponse) {} // HerdIQ -> Fleet manager -> GT-server
 
-    rpc HealthCheck(stream HealthCheckRequest) returns (stream HealthCheckResponse) {}
+    rpc HerdHealthCheck(stream HealthCheckRequest) returns (stream HealthCheckResponse) {}
 
     rpc DockerStatsTelemetry(DockerTelemetryRequest) returns (stream DockerTelemetryResponse) {}
 
