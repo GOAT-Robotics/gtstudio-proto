@@ -29,6 +29,7 @@ enum CommandStreamCommands {
     GET_CONFIGS = 4;
     NAVIGATION = 5; 
     TRIGGER = 6;
+    BLOCK = 7;
 }
 
 enum CommandStreamActions {
@@ -40,6 +41,8 @@ enum CommandStreamActions {
     GOAT_RESPONSE = 5;
     PAUSE_GOAL = 6;
     RESUME_GOAL = 7;
+    BLOCK_ROBOT = 8;
+    UNBLOCK_ROBOT = 9;
 }
 
 message CommandSteamRequest {
