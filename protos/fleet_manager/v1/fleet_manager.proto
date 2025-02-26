@@ -27,9 +27,10 @@ enum CommandStreamCommands {
     FLOW_CANCEL = 2;
     ROBOT_LIST = 3;
     GET_CONFIGS = 4;
-    NAVIGATION = 5; 
-    TRIGGER = 6;
-    BLOCK = 7;
+    UPDATE_CONFIG = 5;
+    NAVIGATION = 6; 
+    TRIGGER = 7;
+    BLOCK = 8;
 }
 
 enum CommandStreamActions {
