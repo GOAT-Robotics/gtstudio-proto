@@ -31,6 +31,10 @@ enum CommandStreamCommands {
     TRIGGER = 6;
     BLOCK = 7;
     UPDATE_CONFIG = 8;
+    LOCALIZATION = 9;
+    SWITCH_MAP = 10;
+    UPDATE_MAP = 11;
+    GET_MAP = 12;
 }
 
 enum CommandStreamActions {
