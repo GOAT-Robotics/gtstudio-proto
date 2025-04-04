@@ -41,7 +41,7 @@ do
 done
 
 # Move generated Go files to ./protos/v1/
-mv ./github.com/TeamDotworld/robotix-proto/protos/v1/* ./protos/v1/
+mv ./github.com/GOAT-Robotics/robotix-proto/protos/v1/* ./protos/v1/
 
 # remove the github.com directory
 rm -rf ./github.com

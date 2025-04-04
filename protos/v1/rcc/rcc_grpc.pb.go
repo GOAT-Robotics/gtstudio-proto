@@ -8,7 +8,7 @@ package rcc
 
 import (
 	context "context"
-	model "github.com/TeamDotworld/robotix-proto/protos/v1/model"
+	model "github.com/GOAT-Robotics/robotix-proto/protos/v1/model"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"

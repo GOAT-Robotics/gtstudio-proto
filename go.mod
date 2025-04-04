@@ -1,4 +1,4 @@
-module github.com/TeamDotworld/robotix-proto
+module github.com/GOAT-Robotics/robotix-proto
 
 go 1.21
 
