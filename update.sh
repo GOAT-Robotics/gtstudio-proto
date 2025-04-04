@@ -23,5 +23,5 @@ git push
 git push --tags
 echo -e '\033[4;32;1mUpdating Go Repository\033[m'
 
-sed -i "s/version=$old_version/version=$version/g" /home/cipher/GoProjects/robotix-proto/update.sh
+sed -i "s/version=$old_version/version=$version/g" /home/ros2/robotix-proto/update.sh
 echo -e '\033[4;32;1mDone!\033[m'
