@@ -1,4 +1,4 @@
-module github.com/GOAT-Robotics/robotix-proto
+module github.com/GOAT-Robotics/gtstudio-proto
 
 go 1.21
 
