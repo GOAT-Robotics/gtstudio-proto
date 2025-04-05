@@ -2,37 +2,53 @@ syntax = "proto3";
 
 package v1.fleet_manager;
 
-option go_package = "protos/v1/fleet_manager";
+option go_package = "github.com/GOAT-Robotics/gtstudio-proto/protos/v1/fleet_manager";
 
 service FleetManager {
 
-    rpc CommandStream(stream CommandSteamRequest) returns (stream CommandSteamRespose) {} // Fleet manager (GT-server and each Docker service)
+    rpc HerdCommandStream(stream CommandSteamRequest) returns (stream CommandSteamRespose) {} // Fleet manager (GT-server and each Docker service)
 
     rpc HerdServices(HerdServiceRequest) returns (HerdServiceResponse) {}  // GT-server to fleet manager
 
-    rpc RobotTelemetry(stream RobotTelemetryData) returns (stream RobotTelemetryResponse) {} // Fleet manager (GT-server and each Docker service)
+    rpc HerdRobotTelemetry(RobotTelemetryData) returns (stream RobotTelemetryResponse) {} // Fleet manager (GT-server and each Docker service)
 
-    rpc HerdTelemetry(stream HerdTelemetryReqest) returns (stream HerdTelemetryResponse) {} // HerdIQ -> Fleet manager -> GT-server
+    rpc HerdTelemetry(stream HerdTelemetryReqest) returns (HerdTelemetryResponse) {} // HerdIQ -> Fleet manager -> GT-server
 
-    rpc NavigationTelemetry(stream NavTelemetryRequest) returns (stream NavTelemetryResponse) {} 
+    rpc HerdHealthCheck(stream HealthCheckRequest) returns (stream HealthCheckResponse) {}
+
+    rpc DockerStatsTelemetry(DockerTelemetryRequest) returns (stream DockerTelemetryResponse) {}
 
 }
 
 // Command stream service
 enum CommandStreamCommands {
-    FLOW_EXECUTE = 0;
-    FLOW_CANCEL = 1;
-    ROBOT_LIST = 2;
-    GET_CONFIGS = 3;
-    NAVIGATION = 4; 
-    TRIGGER_CHARGER = 5;
-    TRIGGER_HOME_CHARGER = 6;
-    TRIGGER_EMERGENCY = 7;
+    COMMAND_STREAM_UNKNOWN = 0;
+    FLOW_EXECUTE = 1;
+    FLOW_CANCEL = 2;
+    ROBOT_LIST = 3;
+    GET_CONFIGS = 4;
+    NAVIGATION = 5; 
+    TRIGGER = 6;
+    BLOCK = 7;
+    UPDATE_CONFIG = 8;
+    LOCALIZATION = 9;
+    MAP = 10;
 }
 
 enum CommandStreamActions {
-    CANCEL_GOAL = 0;
-    SEND_GOAL = 1;
+    COMMAND_ACTION_UNKNOWN = 0;
+    CANCEL_GOAL = 1;
+    SEND_GOAL = 2;
+    HOME = 3;
+    CHARGER = 4;
+    GOAT_RESPONSE = 5;
+    PAUSE_GOAL = 6;
+    RESUME_GOAL = 7;
+    BLOCK_ROBOT = 8;
+    UNBLOCK_ROBOT = 9;
+    SWITCH_MAP = 10;
+    UPDATE_MAP = 11;
+    GET_MAP = 12;
 }
 
 message CommandSteamRequest {
@@ -45,6 +61,7 @@ message CommandSteamRequest {
     bool status = 7;
     string message = 8;
     string request_id = 9;
+    string organization = 10;
 }
 
 message CommandSteamRespose {
@@ -57,16 +74,18 @@ message CommandSteamRespose {
     string device_id = 7;
     string data = 8;
     string request_id = 9;
+    string organization = 10;
 }
 
 // Herd Service 
 enum HerdActions {
-    CREATE = 0;
-    UPDATE = 1;
-    DELETE = 2;
-    START = 3;
-    STOP = 4;
-    RESTART = 5;
+    HERD_ACTION_UNKNOWN = 0;
+    CREATE = 1;
+    UPDATE = 2;
+    DELETE = 3;
+    START = 4;
+    STOP = 5;
+    RESTART = 6;
 }
 
 message HerdData {
@@ -111,14 +130,16 @@ message RobotTelemetryResponse {
 
 // HerdIQ Telemetry (fleet states, dispatch states)
 enum HerdTelemetryActions {
-    FLEET_STATES = 0;
-    DISAPTCH_STATES = 1;
+    HERD_TELEMETRY_UNKNOWN = 0;
+    FLEET_STATES = 1;
+    DISAPTCH_STATES = 2;
 }
 
 message HerdTelemetryReqest {
     string slug_name = 1;
     HerdTelemetryActions action = 2;
     string data = 3;
+    string organization = 4;
 }
 
 message HerdTelemetryResponse {
@@ -127,23 +148,44 @@ message HerdTelemetryResponse {
     string data = 3;
     bool status = 4;
     string message = 5;
+    string organization = 6;
 }
 
 // Navigation telemetry stream
-message NavTelemetryRequest {
+message HealthCheckRequest {
     string slug_name = 1;
-    string robot = 2;
-    string device_id = 3;
-    string data = 4;
-    string status = 5;
+    bool status = 5;
     string message = 6;
 }
 
-message NavTelemetryResponse {
+message HealthCheckResponse {
     string slug_name = 1;
-    string robot = 2;
-    string device_id = 3;
-    string data = 4;
-    string status = 5;
+    bool status = 5;
     string message = 6;
+}
+
+// Docker stats telemetry stream
+message DockerTelemetryData {
+    double cpu = 1;
+    double memory = 2;
+    string name = 3;
+    string container_id = 4;
+    uint64 num_of_procs = 6;
+    uint64 current_pid = 7;
+    string created_at = 8;
+    string updated_at = 9;
+    string version = 11;
+}
+
+message DockerTelemetryRequest {
+    string slug_name = 1;
+    bool status = 2;
+    string message = 3;
+}
+
+message DockerTelemetryResponse {
+    string slug_name = 1;
+    DockerTelemetryData data = 2;
+    bool status = 3;
+    string message = 4;
 }
