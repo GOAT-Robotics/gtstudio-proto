@@ -1060,7 +1060,7 @@ func (x *SendSubscriptionResponseResponse) GetError() *Error {
 	return nil
 }
 
-type RecieveRosMessagesRequest struct {
+type ReceiveRosMessagesRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1069,8 +1069,8 @@ type RecieveRosMessagesRequest struct {
 	ControlDatapoint *model.ControlDatapoint `protobuf:"bytes,2,opt,name=control_datapoint,json=controlDatapoint,proto3" json:"control_datapoint,omitempty"`
 }
 
-func (x *RecieveRosMessagesRequest) Reset() {
-	*x = RecieveRosMessagesRequest{}
+func (x *ReceiveRosMessagesRequest) Reset() {
+	*x = ReceiveRosMessagesRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protos_rcc_v1_rcc_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1078,13 +1078,13 @@ func (x *RecieveRosMessagesRequest) Reset() {
 	}
 }
 
-func (x *RecieveRosMessagesRequest) String() string {
+func (x *ReceiveRosMessagesRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RecieveRosMessagesRequest) ProtoMessage() {}
+func (*ReceiveRosMessagesRequest) ProtoMessage() {}
 
-func (x *RecieveRosMessagesRequest) ProtoReflect() protoreflect.Message {
+func (x *ReceiveRosMessagesRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_protos_rcc_v1_rcc_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1096,26 +1096,26 @@ func (x *RecieveRosMessagesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RecieveRosMessagesRequest.ProtoReflect.Descriptor instead.
-func (*RecieveRosMessagesRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReceiveRosMessagesRequest.ProtoReflect.Descriptor instead.
+func (*ReceiveRosMessagesRequest) Descriptor() ([]byte, []int) {
 	return file_protos_rcc_v1_rcc_proto_rawDescGZIP(), []int{21}
 }
 
-func (x *RecieveRosMessagesRequest) GetId() string {
+func (x *ReceiveRosMessagesRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *RecieveRosMessagesRequest) GetControlDatapoint() *model.ControlDatapoint {
+func (x *ReceiveRosMessagesRequest) GetControlDatapoint() *model.ControlDatapoint {
 	if x != nil {
 		return x.ControlDatapoint
 	}
 	return nil
 }
 
-type RecieveRosMessagesResponse struct {
+type ReceiveRosMessagesResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1125,8 +1125,8 @@ type RecieveRosMessagesResponse struct {
 	Error     string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
 }
 
-func (x *RecieveRosMessagesResponse) Reset() {
-	*x = RecieveRosMessagesResponse{}
+func (x *ReceiveRosMessagesResponse) Reset() {
+	*x = ReceiveRosMessagesResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protos_rcc_v1_rcc_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1134,13 +1134,13 @@ func (x *RecieveRosMessagesResponse) Reset() {
 	}
 }
 
-func (x *RecieveRosMessagesResponse) String() string {
+func (x *ReceiveRosMessagesResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RecieveRosMessagesResponse) ProtoMessage() {}
+func (*ReceiveRosMessagesResponse) ProtoMessage() {}
 
-func (x *RecieveRosMessagesResponse) ProtoReflect() protoreflect.Message {
+func (x *ReceiveRosMessagesResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_protos_rcc_v1_rcc_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1152,26 +1152,26 @@ func (x *RecieveRosMessagesResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RecieveRosMessagesResponse.ProtoReflect.Descriptor instead.
-func (*RecieveRosMessagesResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReceiveRosMessagesResponse.ProtoReflect.Descriptor instead.
+func (*ReceiveRosMessagesResponse) Descriptor() ([]byte, []int) {
 	return file_protos_rcc_v1_rcc_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *RecieveRosMessagesResponse) GetRequestId() string {
+func (x *ReceiveRosMessagesResponse) GetRequestId() string {
 	if x != nil {
 		return x.RequestId
 	}
 	return ""
 }
 
-func (x *RecieveRosMessagesResponse) GetStatus() bool {
+func (x *ReceiveRosMessagesResponse) GetStatus() bool {
 	if x != nil {
 		return x.Status
 	}
 	return false
 }
 
-func (x *RecieveRosMessagesResponse) GetError() string {
+func (x *ReceiveRosMessagesResponse) GetError() string {
 	if x != nil {
 		return x.Error
 	}
@@ -1573,14 +1573,14 @@ var file_protos_rcc_v1_rcc_proto_rawDesc = []byte{
 	0x61, 0x74, 0x75, 0x73, 0x12, 0x23, 0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x76, 0x31, 0x2e, 0x72, 0x63, 0x63, 0x2e, 0x45, 0x72, 0x72,
 	0x6f, 0x72, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x22, 0x74, 0x0a, 0x19, 0x52, 0x65, 0x63,
-	0x69, 0x65, 0x76, 0x65, 0x52, 0x6f, 0x73, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x52,
+	0x65, 0x69, 0x76, 0x65, 0x52, 0x6f, 0x73, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x52,
 	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x47, 0x0a, 0x11, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f,
 	0x6c, 0x5f, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28,
 	0x0b, 0x32, 0x1a, 0x2e, 0x76, 0x31, 0x2e, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x2e, 0x43, 0x6f, 0x6e,
 	0x74, 0x72, 0x6f, 0x6c, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x10, 0x63,
 	0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x22,
-	0x69, 0x0a, 0x1a, 0x52, 0x65, 0x63, 0x69, 0x65, 0x76, 0x65, 0x52, 0x6f, 0x73, 0x4d, 0x65, 0x73,
+	0x69, 0x0a, 0x1a, 0x52, 0x65, 0x63, 0x65, 0x69, 0x76, 0x65, 0x52, 0x6f, 0x73, 0x4d, 0x65, 0x73,
 	0x73, 0x61, 0x67, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1d, 0x0a,
 	0x0a, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x09, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x06,
@@ -1689,9 +1689,9 @@ var file_protos_rcc_v1_rcc_proto_rawDesc = []byte{
 	0x44, 0x61, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x28, 0x01,
 	0x12, 0x61, 0x0a, 0x12, 0x52, 0x65, 0x63, 0x65, 0x69, 0x76, 0x65, 0x52, 0x6f, 0x73, 0x4d, 0x65,
 	0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x12, 0x22, 0x2e, 0x76, 0x31, 0x2e, 0x72, 0x63, 0x63, 0x2e,
-	0x52, 0x65, 0x63, 0x69, 0x65, 0x76, 0x65, 0x52, 0x6f, 0x73, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67,
+	0x52, 0x65, 0x63, 0x65, 0x69, 0x76, 0x65, 0x52, 0x6f, 0x73, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67,
 	0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x21, 0x2e, 0x76, 0x31, 0x2e,
-	0x72, 0x63, 0x63, 0x2e, 0x52, 0x65, 0x63, 0x69, 0x65, 0x76, 0x65, 0x52, 0x6f, 0x73, 0x4d, 0x65,
+	0x72, 0x63, 0x63, 0x2e, 0x52, 0x65, 0x63, 0x65, 0x69, 0x76, 0x65, 0x52, 0x6f, 0x73, 0x4d, 0x65,
 	0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x00, 0x28,
 	0x01, 0x30, 0x01, 0x12, 0x4f, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x52, 0x74, 0x63, 0x53, 0x69, 0x67,
 	0x6e, 0x61, 0x6c, 0x12, 0x1c, 0x2e, 0x76, 0x31, 0x2e, 0x72, 0x63, 0x63, 0x2e, 0x47, 0x65, 0x74,
@@ -1744,8 +1744,8 @@ var file_protos_rcc_v1_rcc_proto_goTypes = []any{
 	(*GetSubscriptionRequestStreamResponse)(nil), // 18: v1.rcc.GetSubscriptionRequestStreamResponse
 	(*SendSubscriptionResponseRequest)(nil),      // 19: v1.rcc.SendSubscriptionResponseRequest
 	(*SendSubscriptionResponseResponse)(nil),     // 20: v1.rcc.SendSubscriptionResponseResponse
-	(*RecieveRosMessagesRequest)(nil),            // 21: v1.rcc.RecieveRosMessagesRequest
-	(*RecieveRosMessagesResponse)(nil),           // 22: v1.rcc.RecieveRosMessagesResponse
+	(*ReceiveRosMessagesRequest)(nil),            // 21: v1.rcc.ReceiveRosMessagesRequest
+	(*ReceiveRosMessagesResponse)(nil),           // 22: v1.rcc.ReceiveRosMessagesResponse
 	(*GetRtcSignalRequest)(nil),                  // 23: v1.rcc.GetRtcSignalRequest
 	(*GetRtcSignalResponse)(nil),                 // 24: v1.rcc.GetRtcSignalResponse
 	(*SignalDataRequest)(nil),                    // 25: v1.rcc.SignalDataRequest
@@ -1770,7 +1770,7 @@ var file_protos_rcc_v1_rcc_proto_depIdxs = []int32{
 	32, // 6: v1.rcc.GetSubscriptionRequestStreamResponse.topic:type_name -> v1.model.StreamConfiguration
 	33, // 7: v1.rcc.SendSubscriptionResponseRequest.response:type_name -> v1.model.SubscriptionsResponse
 	9,  // 8: v1.rcc.SendSubscriptionResponseResponse.error:type_name -> v1.rcc.Error
-	34, // 9: v1.rcc.RecieveRosMessagesRequest.control_datapoint:type_name -> v1.model.ControlDatapoint
+	34, // 9: v1.rcc.ReceiveRosMessagesRequest.control_datapoint:type_name -> v1.model.ControlDatapoint
 	35, // 10: v1.rcc.GetRtcSignalRequest.request_type:type_name -> v1.model.Webrtctype
 	35, // 11: v1.rcc.SignalDataRequest.request_type:type_name -> v1.model.Webrtctype
 	0,  // 12: v1.rcc.Agent.AuthenticateAgent:input_type -> v1.rcc.AuthRequest
@@ -1785,7 +1785,7 @@ var file_protos_rcc_v1_rcc_proto_depIdxs = []int32{
 	31, // 21: v1.rcc.Agent.PostData:input_type -> v1.model.Datapoint
 	14, // 22: v1.rcc.Agent.PostMultiData:input_type -> v1.rcc.PostMultiDataRequest
 	31, // 23: v1.rcc.Agent.StreamData:input_type -> v1.model.Datapoint
-	22, // 24: v1.rcc.Agent.ReceiveRosMessages:input_type -> v1.rcc.RecieveRosMessagesResponse
+	22, // 24: v1.rcc.Agent.ReceiveRosMessages:input_type -> v1.rcc.ReceiveRosMessagesResponse
 	24, // 25: v1.rcc.Agent.GetRtcSignal:input_type -> v1.rcc.GetRtcSignalResponse
 	25, // 26: v1.rcc.Agent.SendSignalData:input_type -> v1.rcc.SignalDataRequest
 	1,  // 27: v1.rcc.Agent.AuthenticateAgent:output_type -> v1.rcc.AuthResponse
@@ -1800,7 +1800,7 @@ var file_protos_rcc_v1_rcc_proto_depIdxs = []int32{
 	13, // 36: v1.rcc.Agent.PostData:output_type -> v1.rcc.PostDataResponse
 	15, // 37: v1.rcc.Agent.PostMultiData:output_type -> v1.rcc.PostMultiDataResponse
 	16, // 38: v1.rcc.Agent.StreamData:output_type -> v1.rcc.StreamDataResponse
-	21, // 39: v1.rcc.Agent.ReceiveRosMessages:output_type -> v1.rcc.RecieveRosMessagesRequest
+	21, // 39: v1.rcc.Agent.ReceiveRosMessages:output_type -> v1.rcc.ReceiveRosMessagesRequest
 	23, // 40: v1.rcc.Agent.GetRtcSignal:output_type -> v1.rcc.GetRtcSignalRequest
 	26, // 41: v1.rcc.Agent.SendSignalData:output_type -> v1.rcc.SignalDataResponse
 	27, // [27:42] is the sub-list for method output_type
@@ -2069,7 +2069,7 @@ func file_protos_rcc_v1_rcc_proto_init() {
 			}
 		}
 		file_protos_rcc_v1_rcc_proto_msgTypes[21].Exporter = func(v any, i int) any {
-			switch v := v.(*RecieveRosMessagesRequest); i {
+			switch v := v.(*ReceiveRosMessagesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2081,7 +2081,7 @@ func file_protos_rcc_v1_rcc_proto_init() {
 			}
 		}
 		file_protos_rcc_v1_rcc_proto_msgTypes[22].Exporter = func(v any, i int) any {
-			switch v := v.(*RecieveRosMessagesResponse); i {
+			switch v := v.(*ReceiveRosMessagesResponse); i {
 			case 0:
 				return &v.state
 			case 1:

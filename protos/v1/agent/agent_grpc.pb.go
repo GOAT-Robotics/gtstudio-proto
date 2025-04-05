@@ -58,7 +58,7 @@ type AgentRosBridgeClient interface {
 	// service call, if Action call it sends both result and feedback ) for a
 	// particular command to the server.
 	SendCommandResponse(ctx context.Context, in *SendCommandResponseRequest, opts ...grpc.CallOption) (*SendCommandResponseResponse, error)
-	// GetSubscriptionRequestStream service recieves subscription related commands
+	// GetSubscriptionRequestStream service receives subscription related commands
 	// such as "SUBSCRIBE", "UNSUBSCRIBE" and sends back the response to the
 	// server. This is previously implemented for node sdk with grpc, and not
 	// work with current implementation.
@@ -316,8 +316,8 @@ func (c *agentRosBridgeClient) ReceiveRosMessages(ctx context.Context, opts ...g
 }
 
 type AgentRosBridge_ReceiveRosMessagesClient interface {
-	Send(*RecieveRosMessagesResponse) error
-	Recv() (*RecieveRosMessagesRequest, error)
+	Send(*ReceiveRosMessagesResponse) error
+	Recv() (*ReceiveRosMessagesRequest, error)
 	grpc.ClientStream
 }
 
@@ -325,12 +325,12 @@ type agentRosBridgeReceiveRosMessagesClient struct {
 	grpc.ClientStream
 }
 
-func (x *agentRosBridgeReceiveRosMessagesClient) Send(m *RecieveRosMessagesResponse) error {
+func (x *agentRosBridgeReceiveRosMessagesClient) Send(m *ReceiveRosMessagesResponse) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *agentRosBridgeReceiveRosMessagesClient) Recv() (*RecieveRosMessagesRequest, error) {
-	m := new(RecieveRosMessagesRequest)
+func (x *agentRosBridgeReceiveRosMessagesClient) Recv() (*ReceiveRosMessagesRequest, error) {
+	m := new(ReceiveRosMessagesRequest)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -360,7 +360,7 @@ type AgentRosBridgeServer interface {
 	// service call, if Action call it sends both result and feedback ) for a
 	// particular command to the server.
 	SendCommandResponse(context.Context, *SendCommandResponseRequest) (*SendCommandResponseResponse, error)
-	// GetSubscriptionRequestStream service recieves subscription related commands
+	// GetSubscriptionRequestStream service receives subscription related commands
 	// such as "SUBSCRIBE", "UNSUBSCRIBE" and sends back the response to the
 	// server. This is previously implemented for node sdk with grpc, and not
 	// work with current implementation.
@@ -689,8 +689,8 @@ func _AgentRosBridge_ReceiveRosMessages_Handler(srv interface{}, stream grpc.Ser
 }
 
 type AgentRosBridge_ReceiveRosMessagesServer interface {
-	Send(*RecieveRosMessagesRequest) error
-	Recv() (*RecieveRosMessagesResponse, error)
+	Send(*ReceiveRosMessagesRequest) error
+	Recv() (*ReceiveRosMessagesResponse, error)
 	grpc.ServerStream
 }
 
@@ -698,12 +698,12 @@ type agentRosBridgeReceiveRosMessagesServer struct {
 	grpc.ServerStream
 }
 
-func (x *agentRosBridgeReceiveRosMessagesServer) Send(m *RecieveRosMessagesRequest) error {
+func (x *agentRosBridgeReceiveRosMessagesServer) Send(m *ReceiveRosMessagesRequest) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *agentRosBridgeReceiveRosMessagesServer) Recv() (*RecieveRosMessagesResponse, error) {
-	m := new(RecieveRosMessagesResponse)
+func (x *agentRosBridgeReceiveRosMessagesServer) Recv() (*ReceiveRosMessagesResponse, error) {
+	m := new(ReceiveRosMessagesResponse)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
