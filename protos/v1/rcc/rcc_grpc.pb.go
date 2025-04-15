@@ -26,6 +26,8 @@ const (
 	Agent_Health_FullMethodName                       = "/v1.rcc.Agent/Health"
 	Agent_GetCommandRequestStream_FullMethodName      = "/v1.rcc.Agent/GetCommandRequestStream"
 	Agent_SendCommandResponse_FullMethodName          = "/v1.rcc.Agent/SendCommandResponse"
+	Agent_GetActionRequestStream_FullMethodName       = "/v1.rcc.Agent/GetActionRequestStream"
+	Agent_SendActionResponse_FullMethodName           = "/v1.rcc.Agent/SendActionResponse"
 	Agent_GetSubscriptionRequestStream_FullMethodName = "/v1.rcc.Agent/GetSubscriptionRequestStream"
 	Agent_SendSubscriptionResponse_FullMethodName     = "/v1.rcc.Agent/SendSubscriptionResponse"
 	Agent_SendCommandResponseStream_FullMethodName    = "/v1.rcc.Agent/SendCommandResponseStream"
@@ -61,6 +63,8 @@ type AgentClient interface {
 	// service call, if Action call it sends both result and feedback ) for a
 	// particular command to the server.
 	SendCommandResponse(ctx context.Context, in *SendCommandResponseRequest, opts ...grpc.CallOption) (*SendCommandResponseResponse, error)
+	GetActionRequestStream(ctx context.Context, in *GetActionRequestStreamRequest, opts ...grpc.CallOption) (Agent_GetActionRequestStreamClient, error)
+	SendActionResponse(ctx context.Context, in *SendActionResponseRequest, opts ...grpc.CallOption) (*SendActionResponseResponse, error)
 	// GetSubscriptionRequestStream service receives subscription related commands
 	// such as "SUBSCRIBE", "UNSUBSCRIBE", "GET_TOPICS", "GET_SUBSCRIBED_TOPICS" and
 	// sends back the response to the server. This is previously implemented for
@@ -207,9 +211,52 @@ func (c *agentClient) SendCommandResponse(ctx context.Context, in *SendCommandRe
 	return out, nil
 }
 
+func (c *agentClient) GetActionRequestStream(ctx context.Context, in *GetActionRequestStreamRequest, opts ...grpc.CallOption) (Agent_GetActionRequestStreamClient, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[2], Agent_GetActionRequestStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &agentGetActionRequestStreamClient{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Agent_GetActionRequestStreamClient interface {
+	Recv() (*GetActionRequestStreamResponse, error)
+	grpc.ClientStream
+}
+
+type agentGetActionRequestStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *agentGetActionRequestStreamClient) Recv() (*GetActionRequestStreamResponse, error) {
+	m := new(GetActionRequestStreamResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *agentClient) SendActionResponse(ctx context.Context, in *SendActionResponseRequest, opts ...grpc.CallOption) (*SendActionResponseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendActionResponseResponse)
+	err := c.cc.Invoke(ctx, Agent_SendActionResponse_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *agentClient) GetSubscriptionRequestStream(ctx context.Context, in *GetSubscriptionRequestStreamRequest, opts ...grpc.CallOption) (Agent_GetSubscriptionRequestStreamClient, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[2], Agent_GetSubscriptionRequestStream_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[3], Agent_GetSubscriptionRequestStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +299,7 @@ func (c *agentClient) SendSubscriptionResponse(ctx context.Context, in *SendSubs
 
 func (c *agentClient) SendCommandResponseStream(ctx context.Context, opts ...grpc.CallOption) (Agent_SendCommandResponseStreamClient, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[3], Agent_SendCommandResponseStream_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[4], Agent_SendCommandResponseStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +351,7 @@ func (c *agentClient) PostMultiData(ctx context.Context, in *PostMultiDataReques
 
 func (c *agentClient) StreamData(ctx context.Context, opts ...grpc.CallOption) (Agent_StreamDataClient, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[4], Agent_StreamData_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[5], Agent_StreamData_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +386,7 @@ func (x *agentStreamDataClient) CloseAndRecv() (*StreamDataResponse, error) {
 
 func (c *agentClient) ReceiveRosMessages(ctx context.Context, opts ...grpc.CallOption) (Agent_ReceiveRosMessagesClient, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[5], Agent_ReceiveRosMessages_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[6], Agent_ReceiveRosMessages_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +418,7 @@ func (x *agentReceiveRosMessagesClient) Recv() (*ReceiveRosMessagesRequest, erro
 
 func (c *agentClient) GetRtcSignal(ctx context.Context, opts ...grpc.CallOption) (Agent_GetRtcSignalClient, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[6], Agent_GetRtcSignal_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[7], Agent_GetRtcSignal_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -435,6 +482,8 @@ type AgentServer interface {
 	// service call, if Action call it sends both result and feedback ) for a
 	// particular command to the server.
 	SendCommandResponse(context.Context, *SendCommandResponseRequest) (*SendCommandResponseResponse, error)
+	GetActionRequestStream(*GetActionRequestStreamRequest, Agent_GetActionRequestStreamServer) error
+	SendActionResponse(context.Context, *SendActionResponseRequest) (*SendActionResponseResponse, error)
 	// GetSubscriptionRequestStream service receives subscription related commands
 	// such as "SUBSCRIBE", "UNSUBSCRIBE", "GET_TOPICS", "GET_SUBSCRIBED_TOPICS" and
 	// sends back the response to the server. This is previously implemented for
@@ -490,6 +539,12 @@ func (UnimplementedAgentServer) GetCommandRequestStream(*GetCommandRequestStream
 }
 func (UnimplementedAgentServer) SendCommandResponse(context.Context, *SendCommandResponseRequest) (*SendCommandResponseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendCommandResponse not implemented")
+}
+func (UnimplementedAgentServer) GetActionRequestStream(*GetActionRequestStreamRequest, Agent_GetActionRequestStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetActionRequestStream not implemented")
+}
+func (UnimplementedAgentServer) SendActionResponse(context.Context, *SendActionResponseRequest) (*SendActionResponseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendActionResponse not implemented")
 }
 func (UnimplementedAgentServer) GetSubscriptionRequestStream(*GetSubscriptionRequestStreamRequest, Agent_GetSubscriptionRequestStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetSubscriptionRequestStream not implemented")
@@ -646,6 +701,45 @@ func _Agent_SendCommandResponse_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AgentServer).SendCommandResponse(ctx, req.(*SendCommandResponseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Agent_GetActionRequestStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GetActionRequestStreamRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AgentServer).GetActionRequestStream(m, &agentGetActionRequestStreamServer{ServerStream: stream})
+}
+
+type Agent_GetActionRequestStreamServer interface {
+	Send(*GetActionRequestStreamResponse) error
+	grpc.ServerStream
+}
+
+type agentGetActionRequestStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *agentGetActionRequestStreamServer) Send(m *GetActionRequestStreamResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _Agent_SendActionResponse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendActionResponseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).SendActionResponse(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_SendActionResponse_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).SendActionResponse(ctx, req.(*SendActionResponseRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -871,6 +965,10 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_SendCommandResponse_Handler,
 		},
 		{
+			MethodName: "SendActionResponse",
+			Handler:    _Agent_SendActionResponse_Handler,
+		},
+		{
 			MethodName: "SendSubscriptionResponse",
 			Handler:    _Agent_SendSubscriptionResponse_Handler,
 		},
@@ -897,6 +995,11 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "GetCommandRequestStream",
 			Handler:       _Agent_GetCommandRequestStream_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GetActionRequestStream",
+			Handler:       _Agent_GetActionRequestStream_Handler,
 			ServerStreams: true,
 		},
 		{

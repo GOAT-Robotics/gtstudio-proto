@@ -7,6 +7,7 @@ import "protos/model/v1/commands.proto";
 import "protos/model/v1/datapoint.proto";
 import "protos/model/v1/webrtc.proto";
 import "protos/model/v1/specifications.proto";
+import "protos/agent/v1/agent.proto";
 
 option go_package = "github.com/GOAT-Robotics/gtstudio-proto/protos/v1/rcc";
 
@@ -48,6 +49,13 @@ service Agent {
   particular command to the server. */
   rpc SendCommandResponse(SendCommandResponseRequest)
       returns (SendCommandResponseResponse) {}
+
+
+  rpc GetActionRequestStream(GetActionRequestStreamRequest)
+      returns (stream GetActionRequestStreamResponse) {}
+
+  rpc SendActionResponse(SendActionResponseRequest)
+      returns (SendActionResponseResponse) {}
 
   /* GetSubscriptionRequestStream service receives subscription related commands
    such as "SUBSCRIBE", "UNSUBSCRIBE", "GET_TOPICS", "GET_SUBSCRIBED_TOPICS" and
@@ -212,4 +220,20 @@ message SignalDataResponse {
   string id = 1;
   bool status = 2;
   string error = 3;
+}
+
+message GetActionRequestStreamRequest{}
+
+message SendActionResponseResponse{
+  bool status = 1;
+  Error error = 2;
+}
+
+message SendActionResponseRequest{
+  agent.SendActionResponse response=1;
+}
+
+message GetActionRequestStreamResponse{
+  agent.ActionRequest request = 1;
+  string action = 2;
 }

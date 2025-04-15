@@ -4,7 +4,7 @@
 # - Generate proto files
 # - Add to git, commit, update version, create tag, push both tag and commit.
 
-version=119
+version=121
 old_version=$version
 
 echo -e '\033[4;32;1mGenerating Proto Code\033[m'
@@ -16,7 +16,7 @@ echo -e '\033[4;32;1mGive a message: \033[m'
 read message
 git commit -m "$message"
 version=$((version+1))
-echo "Creating a tag - v1.0.$version"
+echo "Creating a tag - v1.0.$version"z
 git tag "v1.0.$version"
 echo -e '\033[4;32;1mPushing Code To Github\033[m'
 git push

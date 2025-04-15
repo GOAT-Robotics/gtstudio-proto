@@ -44,6 +44,6 @@ done
 mv ./github.com/GOAT-Robotics/gtstudio-proto/protos/v1/* ./protos/v1/
 
 # remove the github.com directory
-rm -rf ./github.com
+rm -rf ./github.com/
 
 echo "### Protobuf files generated successfully ###"

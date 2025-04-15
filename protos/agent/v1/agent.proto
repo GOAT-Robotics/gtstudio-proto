@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package v1.agent;
 
+import "google/protobuf/timestamp.proto";
 import "protos/model/v1/text.proto";
 import "protos/model/v1/config.proto";
 import "protos/model/v1/commands.proto";
@@ -80,6 +81,12 @@ service AgentRosBridge {
   messages, camera control messages from agent and then pubslishes to ros. */
   rpc ReceiveRosMessages(stream ReceiveRosMessagesResponse)
       returns (stream ReceiveRosMessagesRequest) {}
+
+  rpc SendActionStream(SendActionRequest)
+      returns (stream SendActionResponse) {}
+
+  rpc SendActionStreamResponse(SendActionRequest)
+      returns ( stream SendActionResponse) {}
 }
 
 message Json { string value = 1; }
@@ -160,4 +167,30 @@ message ReceiveRosMessagesResponse {
   string request_id = 1;
   bool status = 2;
   string error = 3;
+}
+
+message SendActionRequest{
+  string request_id = 1;
+  string data = 2;
+  bool status = 3;
+  bool isResult = 4;
+}
+
+message SendActionResponse{
+  string request_id = 1;
+  bool status = 2;
+  bool isResult = 3;
+  oneof result {
+    string data = 4;
+    bytes raw = 5;
+    string error = 6;
+  }
+}
+
+message ActionRequest {
+  string id = 1;
+  string command = 2;
+  bool compressed = 3;
+  string data = 4;
+  google.protobuf.Timestamp scrubber_time = 5;
 }
