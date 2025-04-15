@@ -33,8 +33,8 @@ const (
 	AgentRosBridge_PostMultiData_FullMethodName                = "/v1.agent.AgentRosBridge/PostMultiData"
 	AgentRosBridge_StreamData_FullMethodName                   = "/v1.agent.AgentRosBridge/StreamData"
 	AgentRosBridge_ReceiveRosMessages_FullMethodName           = "/v1.agent.AgentRosBridge/ReceiveRosMessages"
-	AgentRosBridge_SendActionStream_FullMethodName             = "/v1.agent.AgentRosBridge/SendActionStream"
-	AgentRosBridge_SendActionStreamResponse_FullMethodName     = "/v1.agent.AgentRosBridge/SendActionStreamResponse"
+	AgentRosBridge_GetActionRequestStream_FullMethodName       = "/v1.agent.AgentRosBridge/GetActionRequestStream"
+	AgentRosBridge_SendActionResponse_FullMethodName           = "/v1.agent.AgentRosBridge/SendActionResponse"
 )
 
 // AgentRosBridgeClient is the client API for AgentRosBridge service.
@@ -87,8 +87,8 @@ type AgentRosBridgeClient interface {
 	// gets ros messages which needs to be published such as command velocity
 	// messages, camera control messages from agent and then pubslishes to ros.
 	ReceiveRosMessages(ctx context.Context, opts ...grpc.CallOption) (AgentRosBridge_ReceiveRosMessagesClient, error)
-	SendActionStream(ctx context.Context, in *SendActionRequest, opts ...grpc.CallOption) (AgentRosBridge_SendActionStreamClient, error)
-	SendActionStreamResponse(ctx context.Context, in *SendActionRequest, opts ...grpc.CallOption) (AgentRosBridge_SendActionStreamResponseClient, error)
+	GetActionRequestStream(ctx context.Context, in *GetActionRequestStreamRequest, opts ...grpc.CallOption) (AgentRosBridge_GetActionRequestStreamClient, error)
+	SendActionResponse(ctx context.Context, in *SendActionResponseRequest, opts ...grpc.CallOption) (*SendActionResponseResponse, error)
 }
 
 type agentRosBridgeClient struct {
@@ -341,13 +341,13 @@ func (x *agentRosBridgeReceiveRosMessagesClient) Recv() (*ReceiveRosMessagesRequ
 	return m, nil
 }
 
-func (c *agentRosBridgeClient) SendActionStream(ctx context.Context, in *SendActionRequest, opts ...grpc.CallOption) (AgentRosBridge_SendActionStreamClient, error) {
+func (c *agentRosBridgeClient) GetActionRequestStream(ctx context.Context, in *GetActionRequestStreamRequest, opts ...grpc.CallOption) (AgentRosBridge_GetActionRequestStreamClient, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &AgentRosBridge_ServiceDesc.Streams[5], AgentRosBridge_SendActionStream_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &AgentRosBridge_ServiceDesc.Streams[5], AgentRosBridge_GetActionRequestStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &agentRosBridgeSendActionStreamClient{ClientStream: stream}
+	x := &agentRosBridgeGetActionRequestStreamClient{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -357,54 +357,31 @@ func (c *agentRosBridgeClient) SendActionStream(ctx context.Context, in *SendAct
 	return x, nil
 }
 
-type AgentRosBridge_SendActionStreamClient interface {
-	Recv() (*SendActionResponse, error)
+type AgentRosBridge_GetActionRequestStreamClient interface {
+	Recv() (*GetActionRequestStreamResponse, error)
 	grpc.ClientStream
 }
 
-type agentRosBridgeSendActionStreamClient struct {
+type agentRosBridgeGetActionRequestStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *agentRosBridgeSendActionStreamClient) Recv() (*SendActionResponse, error) {
-	m := new(SendActionResponse)
+func (x *agentRosBridgeGetActionRequestStreamClient) Recv() (*GetActionRequestStreamResponse, error) {
+	m := new(GetActionRequestStreamResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *agentRosBridgeClient) SendActionStreamResponse(ctx context.Context, in *SendActionRequest, opts ...grpc.CallOption) (AgentRosBridge_SendActionStreamResponseClient, error) {
+func (c *agentRosBridgeClient) SendActionResponse(ctx context.Context, in *SendActionResponseRequest, opts ...grpc.CallOption) (*SendActionResponseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &AgentRosBridge_ServiceDesc.Streams[6], AgentRosBridge_SendActionStreamResponse_FullMethodName, cOpts...)
+	out := new(SendActionResponseResponse)
+	err := c.cc.Invoke(ctx, AgentRosBridge_SendActionResponse_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &agentRosBridgeSendActionStreamResponseClient{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type AgentRosBridge_SendActionStreamResponseClient interface {
-	Recv() (*SendActionResponse, error)
-	grpc.ClientStream
-}
-
-type agentRosBridgeSendActionStreamResponseClient struct {
-	grpc.ClientStream
-}
-
-func (x *agentRosBridgeSendActionStreamResponseClient) Recv() (*SendActionResponse, error) {
-	m := new(SendActionResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // AgentRosBridgeServer is the server API for AgentRosBridge service.
@@ -457,8 +434,8 @@ type AgentRosBridgeServer interface {
 	// gets ros messages which needs to be published such as command velocity
 	// messages, camera control messages from agent and then pubslishes to ros.
 	ReceiveRosMessages(AgentRosBridge_ReceiveRosMessagesServer) error
-	SendActionStream(*SendActionRequest, AgentRosBridge_SendActionStreamServer) error
-	SendActionStreamResponse(*SendActionRequest, AgentRosBridge_SendActionStreamResponseServer) error
+	GetActionRequestStream(*GetActionRequestStreamRequest, AgentRosBridge_GetActionRequestStreamServer) error
+	SendActionResponse(context.Context, *SendActionResponseRequest) (*SendActionResponseResponse, error)
 	mustEmbedUnimplementedAgentRosBridgeServer()
 }
 
@@ -505,11 +482,11 @@ func (UnimplementedAgentRosBridgeServer) StreamData(AgentRosBridge_StreamDataSer
 func (UnimplementedAgentRosBridgeServer) ReceiveRosMessages(AgentRosBridge_ReceiveRosMessagesServer) error {
 	return status.Errorf(codes.Unimplemented, "method ReceiveRosMessages not implemented")
 }
-func (UnimplementedAgentRosBridgeServer) SendActionStream(*SendActionRequest, AgentRosBridge_SendActionStreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method SendActionStream not implemented")
+func (UnimplementedAgentRosBridgeServer) GetActionRequestStream(*GetActionRequestStreamRequest, AgentRosBridge_GetActionRequestStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetActionRequestStream not implemented")
 }
-func (UnimplementedAgentRosBridgeServer) SendActionStreamResponse(*SendActionRequest, AgentRosBridge_SendActionStreamResponseServer) error {
-	return status.Errorf(codes.Unimplemented, "method SendActionStreamResponse not implemented")
+func (UnimplementedAgentRosBridgeServer) SendActionResponse(context.Context, *SendActionResponseRequest) (*SendActionResponseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendActionResponse not implemented")
 }
 func (UnimplementedAgentRosBridgeServer) mustEmbedUnimplementedAgentRosBridgeServer() {}
 
@@ -788,46 +765,43 @@ func (x *agentRosBridgeReceiveRosMessagesServer) Recv() (*ReceiveRosMessagesResp
 	return m, nil
 }
 
-func _AgentRosBridge_SendActionStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SendActionRequest)
+func _AgentRosBridge_GetActionRequestStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GetActionRequestStreamRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(AgentRosBridgeServer).SendActionStream(m, &agentRosBridgeSendActionStreamServer{ServerStream: stream})
+	return srv.(AgentRosBridgeServer).GetActionRequestStream(m, &agentRosBridgeGetActionRequestStreamServer{ServerStream: stream})
 }
 
-type AgentRosBridge_SendActionStreamServer interface {
-	Send(*SendActionResponse) error
+type AgentRosBridge_GetActionRequestStreamServer interface {
+	Send(*GetActionRequestStreamResponse) error
 	grpc.ServerStream
 }
 
-type agentRosBridgeSendActionStreamServer struct {
+type agentRosBridgeGetActionRequestStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *agentRosBridgeSendActionStreamServer) Send(m *SendActionResponse) error {
+func (x *agentRosBridgeGetActionRequestStreamServer) Send(m *GetActionRequestStreamResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _AgentRosBridge_SendActionStreamResponse_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SendActionRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _AgentRosBridge_SendActionResponse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendActionResponseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(AgentRosBridgeServer).SendActionStreamResponse(m, &agentRosBridgeSendActionStreamResponseServer{ServerStream: stream})
-}
-
-type AgentRosBridge_SendActionStreamResponseServer interface {
-	Send(*SendActionResponse) error
-	grpc.ServerStream
-}
-
-type agentRosBridgeSendActionStreamResponseServer struct {
-	grpc.ServerStream
-}
-
-func (x *agentRosBridgeSendActionStreamResponseServer) Send(m *SendActionResponse) error {
-	return x.ServerStream.SendMsg(m)
+	if interceptor == nil {
+		return srv.(AgentRosBridgeServer).SendActionResponse(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentRosBridge_SendActionResponse_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentRosBridgeServer).SendActionResponse(ctx, req.(*SendActionResponseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // AgentRosBridge_ServiceDesc is the grpc.ServiceDesc for AgentRosBridge service.
@@ -869,6 +843,10 @@ var AgentRosBridge_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "PostMultiData",
 			Handler:    _AgentRosBridge_PostMultiData_Handler,
 		},
+		{
+			MethodName: "SendActionResponse",
+			Handler:    _AgentRosBridge_SendActionResponse_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -900,13 +878,8 @@ var AgentRosBridge_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "SendActionStream",
-			Handler:       _AgentRosBridge_SendActionStream_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "SendActionStreamResponse",
-			Handler:       _AgentRosBridge_SendActionStreamResponse_Handler,
+			StreamName:    "GetActionRequestStream",
+			Handler:       _AgentRosBridge_GetActionRequestStream_Handler,
 			ServerStreams: true,
 		},
 	},

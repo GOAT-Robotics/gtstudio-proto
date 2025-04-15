@@ -2,10 +2,11 @@ syntax = "proto3";
 
 package v1.agent;
 
-import "google/protobuf/timestamp.proto";
 import "protos/model/v1/text.proto";
 import "protos/model/v1/config.proto";
 import "protos/model/v1/commands.proto";
+import "protos/model/v1/actions.proto";
+
 import "protos/model/v1/datapoint.proto";
 
 option go_package = "github.com/GOAT-Robotics/gtstudio-proto/protos/v1/agent";
@@ -82,11 +83,11 @@ service AgentRosBridge {
   rpc ReceiveRosMessages(stream ReceiveRosMessagesResponse)
       returns (stream ReceiveRosMessagesRequest) {}
 
-  rpc SendActionStream(SendActionRequest)
-      returns (stream SendActionResponse) {}
+  rpc GetActionRequestStream(GetActionRequestStreamRequest)
+      returns (stream GetActionRequestStreamResponse) {}
 
-  rpc SendActionStreamResponse(SendActionRequest)
-      returns ( stream SendActionResponse) {}
+  rpc SendActionResponse(SendActionResponseRequest)
+      returns (SendActionResponseResponse) {}
 }
 
 message Json { string value = 1; }
@@ -114,6 +115,8 @@ message SendCommandResponseResponse {
 }
 
 message GetCommandRequestStreamRequest { repeated string command_filter = 1; }
+
+message GetActionRequestStreamRequest { repeated string command_filter = 1;}
 
 message GetCommandRequestStreamResponse { 
   model.CommandRequest request = 1;
@@ -169,28 +172,16 @@ message ReceiveRosMessagesResponse {
   string error = 3;
 }
 
-message SendActionRequest{
-  string request_id = 1;
-  string data = 2;
-  bool status = 3;
-  bool isResult = 4;
+message SendActionResponseRequest{
+ model.ActionResponse response = 1;
 }
 
-message SendActionResponse{
-  string request_id = 1;
-  bool status = 2;
-  bool isResult = 3;
-  oneof result {
-    string data = 4;
-    bytes raw = 5;
-    string error = 6;
-  }
+message GetActionRequestStreamResponse{
+  model.ActionRequest request = 1;
+  string action = 2;
 }
 
-message ActionRequest {
-  string id = 1;
-  string command = 2;
-  bool compressed = 3;
-  string data = 4;
-  google.protobuf.Timestamp scrubber_time = 5;
+message SendActionResponseResponse{
+  bool status = 1;
+  Error error = 2;
 }

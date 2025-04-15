@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package v1.model;
+
+option go_package = "github.com/GOAT-Robotics/gtstudio-proto/protos/v1/model";
+
+message ActionRequest {
+    string id = 1;
+    string command = 2;
+    bool compressed = 3;
+    string data = 4;
+    google.protobuf.Timestamp scrubber_time = 5;
+  }
+      
+message ActionResponse {
+  string request_id = 1;
+  bool status = 2;
+  bool isResult = 3;
+  oneof result {
+    string data = 4;
+    bytes raw = 5;
+    string error = 6;
+    }
+  }          
