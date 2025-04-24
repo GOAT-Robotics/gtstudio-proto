@@ -33,6 +33,7 @@ enum CommandStreamCommands {
     UPDATE_CONFIG = 8;
     LOCALIZATION = 9;
     MAP = 10;
+    LANE = 11;
 }
 
 enum CommandStreamActions {
@@ -49,6 +50,8 @@ enum CommandStreamActions {
     SWITCH_MAP = 10;
     UPDATE_MAP = 11;
     GET_MAP = 12;
+    BLOCK_LANE = 13;
+    UNBLOCK_LANE = 14;
 }
 
 message CommandSteamRequest {
