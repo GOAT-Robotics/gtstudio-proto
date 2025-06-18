@@ -161,3 +161,7 @@ message RecieveRosMessagesResponse {
   bool status = 2;
   string error = 3;
 }
+
+message UpdateCommandRequest{
+  repeated string 
+}
