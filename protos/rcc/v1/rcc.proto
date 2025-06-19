@@ -87,8 +87,8 @@ the server. */
   for receiving telop data such as pose, realsense camera feed etc. from ros
   node to agent and then agent sends the data to the client using webrtc
   datachannel  */
-  rpc StreamData(stream model.Datapoint) returns (StreamDataResponse) {}
-
+  rpc StreamData(stream StreamDataResponse) returns (stream StreamDataRequest) {
+  }
   /* ReceiveRosMessages service is established between rosnode and agent. It
   gets ros messages which needs to be published such as command velocity
   messages, camera control messages from agent and then pubslishes to ros. */
@@ -161,7 +161,9 @@ message PostMultiDataRequest { repeated model.Datapoint data = 1; }
 
 message PostMultiDataResponse { bool status = 1; }
 
-message StreamDataResponse {}
+message StreamDataRequest{ bool teleop_status = 1; }
+
+message StreamDataResponse { repeated model.Datapoint messages = 1; }
 
 message GetSubscriptionRequestStreamRequest {}
 
