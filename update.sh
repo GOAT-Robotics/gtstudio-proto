@@ -4,7 +4,7 @@
 # - Generate proto files
 # - Add to git, commit, update version, create tag, push both tag and commit.
 
-version=130
+version=134
 old_version=$version
 
 echo -e '\033[4;32;1mGenerating Proto Code\033[m'
@@ -23,5 +23,5 @@ git push
 git push --tags
 echo -e '\033[4;32;1mUpdating Go Repository\033[m'
 
-sed -i "s/version=$old_version/version=$version/g" $HOME/robotix-proto/update.sh
+sed -i "s/version=$old_version/version=$version/g" /home/goat/Documents/gtstudio-proto/update.sh
 echo -e '\033[4;32;1mDone!\033[m'
