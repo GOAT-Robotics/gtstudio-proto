@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FleetManager_HerdCommandStream_FullMethodName    = "/v1.fleet_manager.FleetManager/HerdCommandStream"
-	FleetManager_HerdServices_FullMethodName         = "/v1.fleet_manager.FleetManager/HerdServices"
-	FleetManager_HerdRobotTelemetry_FullMethodName   = "/v1.fleet_manager.FleetManager/HerdRobotTelemetry"
-	FleetManager_HerdTelemetry_FullMethodName        = "/v1.fleet_manager.FleetManager/HerdTelemetry"
-	FleetManager_HerdHealthCheck_FullMethodName      = "/v1.fleet_manager.FleetManager/HerdHealthCheck"
-	FleetManager_DockerStatsTelemetry_FullMethodName = "/v1.fleet_manager.FleetManager/DockerStatsTelemetry"
+	FleetManager_HerdCommandStream_FullMethodName            = "/v1.fleet_manager.FleetManager/HerdCommandStream"
+	FleetManager_HerdServices_FullMethodName                 = "/v1.fleet_manager.FleetManager/HerdServices"
+	FleetManager_HerdRobotTelemetry_FullMethodName           = "/v1.fleet_manager.FleetManager/HerdRobotTelemetry"
+	FleetManager_StreamRobotTelemetryToClient_FullMethodName = "/v1.fleet_manager.FleetManager/StreamRobotTelemetryToClient"
+	FleetManager_HerdTelemetry_FullMethodName                = "/v1.fleet_manager.FleetManager/HerdTelemetry"
+	FleetManager_HerdHealthCheck_FullMethodName              = "/v1.fleet_manager.FleetManager/HerdHealthCheck"
+	FleetManager_DockerStatsTelemetry_FullMethodName         = "/v1.fleet_manager.FleetManager/DockerStatsTelemetry"
 )
 
 // FleetManagerClient is the client API for FleetManager service.
@@ -34,6 +35,8 @@ type FleetManagerClient interface {
 	HerdCommandStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[CommandSteamRequest, CommandSteamRespose], error)
 	HerdServices(ctx context.Context, in *HerdServiceRequest, opts ...grpc.CallOption) (*HerdServiceResponse, error)
 	HerdRobotTelemetry(ctx context.Context, in *RobotTelemetryData, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RobotTelemetryResponse], error)
+	// Server-stream telemetry to clients using shared model.RobotTelemetry
+	StreamRobotTelemetryToClient(ctx context.Context, in *TelemetrySubscriptionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TelemetryStreamResponse], error)
 	HerdTelemetry(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[HerdTelemetryReqest, HerdTelemetryResponse], error)
 	HerdHealthCheck(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[HealthCheckRequest, HealthCheckResponse], error)
 	DockerStatsTelemetry(ctx context.Context, in *DockerTelemetryRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DockerTelemetryResponse], error)
@@ -89,9 +92,28 @@ func (c *fleetManagerClient) HerdRobotTelemetry(ctx context.Context, in *RobotTe
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type FleetManager_HerdRobotTelemetryClient = grpc.ServerStreamingClient[RobotTelemetryResponse]
 
+func (c *fleetManagerClient) StreamRobotTelemetryToClient(ctx context.Context, in *TelemetrySubscriptionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TelemetryStreamResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &FleetManager_ServiceDesc.Streams[2], FleetManager_StreamRobotTelemetryToClient_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[TelemetrySubscriptionRequest, TelemetryStreamResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type FleetManager_StreamRobotTelemetryToClientClient = grpc.ServerStreamingClient[TelemetryStreamResponse]
+
 func (c *fleetManagerClient) HerdTelemetry(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[HerdTelemetryReqest, HerdTelemetryResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &FleetManager_ServiceDesc.Streams[2], FleetManager_HerdTelemetry_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &FleetManager_ServiceDesc.Streams[3], FleetManager_HerdTelemetry_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +126,7 @@ type FleetManager_HerdTelemetryClient = grpc.ClientStreamingClient[HerdTelemetry
 
 func (c *fleetManagerClient) HerdHealthCheck(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[HealthCheckRequest, HealthCheckResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &FleetManager_ServiceDesc.Streams[3], FleetManager_HerdHealthCheck_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &FleetManager_ServiceDesc.Streams[4], FleetManager_HerdHealthCheck_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +139,7 @@ type FleetManager_HerdHealthCheckClient = grpc.BidiStreamingClient[HealthCheckRe
 
 func (c *fleetManagerClient) DockerStatsTelemetry(ctx context.Context, in *DockerTelemetryRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DockerTelemetryResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &FleetManager_ServiceDesc.Streams[4], FleetManager_DockerStatsTelemetry_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &FleetManager_ServiceDesc.Streams[5], FleetManager_DockerStatsTelemetry_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +163,8 @@ type FleetManagerServer interface {
 	HerdCommandStream(grpc.BidiStreamingServer[CommandSteamRequest, CommandSteamRespose]) error
 	HerdServices(context.Context, *HerdServiceRequest) (*HerdServiceResponse, error)
 	HerdRobotTelemetry(*RobotTelemetryData, grpc.ServerStreamingServer[RobotTelemetryResponse]) error
+	// Server-stream telemetry to clients using shared model.RobotTelemetry
+	StreamRobotTelemetryToClient(*TelemetrySubscriptionRequest, grpc.ServerStreamingServer[TelemetryStreamResponse]) error
 	HerdTelemetry(grpc.ClientStreamingServer[HerdTelemetryReqest, HerdTelemetryResponse]) error
 	HerdHealthCheck(grpc.BidiStreamingServer[HealthCheckRequest, HealthCheckResponse]) error
 	DockerStatsTelemetry(*DockerTelemetryRequest, grpc.ServerStreamingServer[DockerTelemetryResponse]) error
@@ -162,6 +186,9 @@ func (UnimplementedFleetManagerServer) HerdServices(context.Context, *HerdServic
 }
 func (UnimplementedFleetManagerServer) HerdRobotTelemetry(*RobotTelemetryData, grpc.ServerStreamingServer[RobotTelemetryResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method HerdRobotTelemetry not implemented")
+}
+func (UnimplementedFleetManagerServer) StreamRobotTelemetryToClient(*TelemetrySubscriptionRequest, grpc.ServerStreamingServer[TelemetryStreamResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method StreamRobotTelemetryToClient not implemented")
 }
 func (UnimplementedFleetManagerServer) HerdTelemetry(grpc.ClientStreamingServer[HerdTelemetryReqest, HerdTelemetryResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method HerdTelemetry not implemented")
@@ -229,6 +256,17 @@ func _FleetManager_HerdRobotTelemetry_Handler(srv interface{}, stream grpc.Serve
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type FleetManager_HerdRobotTelemetryServer = grpc.ServerStreamingServer[RobotTelemetryResponse]
 
+func _FleetManager_StreamRobotTelemetryToClient_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(TelemetrySubscriptionRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(FleetManagerServer).StreamRobotTelemetryToClient(m, &grpc.GenericServerStream[TelemetrySubscriptionRequest, TelemetryStreamResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type FleetManager_StreamRobotTelemetryToClientServer = grpc.ServerStreamingServer[TelemetryStreamResponse]
+
 func _FleetManager_HerdTelemetry_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(FleetManagerServer).HerdTelemetry(&grpc.GenericServerStream[HerdTelemetryReqest, HerdTelemetryResponse]{ServerStream: stream})
 }
@@ -276,6 +314,11 @@ var FleetManager_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "HerdRobotTelemetry",
 			Handler:       _FleetManager_HerdRobotTelemetry_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "StreamRobotTelemetryToClient",
+			Handler:       _FleetManager_StreamRobotTelemetryToClient_Handler,
 			ServerStreams: true,
 		},
 		{
