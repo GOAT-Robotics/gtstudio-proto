@@ -104,10 +104,10 @@ the server. */
   rpc SendSignalData(SignalDataRequest) returns (SignalDataResponse) {}
 
   /*
-    StreamRobotTelemetry receives a client stream of RobotTelemetry messages
-    from the agent and returns an acknowledgement when the stream completes.
+    StreamRobotTelemetry sends a single RobotTelemetry message from the agent
+    and returns an acknowledgement.
   */
-  rpc StreamRobotTelemetry(stream model.RobotTelemetry) returns (StreamRobotTelemetryResponse) {}
+  rpc StreamRobotTelemetry(model.RobotTelemetry) returns (StreamRobotTelemetryResponse) {}
 }
 
 message AuthRequest {

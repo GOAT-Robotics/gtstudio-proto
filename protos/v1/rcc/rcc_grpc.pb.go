@@ -97,9 +97,9 @@ type AgentClient interface {
 	GetRtcSignal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[GetRtcSignalResponse, GetRtcSignalRequest], error)
 	// To transfer the signaling data between RCC server and agent
 	SendSignalData(ctx context.Context, in *SignalDataRequest, opts ...grpc.CallOption) (*SignalDataResponse, error)
-	// StreamRobotTelemetry receives a client stream of RobotTelemetry messages
-	// from the agent and returns an acknowledgement when the stream completes.
-	StreamRobotTelemetry(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[model.RobotTelemetry, StreamRobotTelemetryResponse], error)
+	// StreamRobotTelemetry sends a single RobotTelemetry message from the agent
+	// and returns an acknowledgement.
+	StreamRobotTelemetry(ctx context.Context, in *model.RobotTelemetry, opts ...grpc.CallOption) (*StreamRobotTelemetryResponse, error)
 }
 
 type agentClient struct {
@@ -322,18 +322,15 @@ func (c *agentClient) SendSignalData(ctx context.Context, in *SignalDataRequest,
 	return out, nil
 }
 
-func (c *agentClient) StreamRobotTelemetry(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[model.RobotTelemetry, StreamRobotTelemetryResponse], error) {
+func (c *agentClient) StreamRobotTelemetry(ctx context.Context, in *model.RobotTelemetry, opts ...grpc.CallOption) (*StreamRobotTelemetryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[8], Agent_StreamRobotTelemetry_FullMethodName, cOpts...)
+	out := new(StreamRobotTelemetryResponse)
+	err := c.cc.Invoke(ctx, Agent_StreamRobotTelemetry_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[model.RobotTelemetry, StreamRobotTelemetryResponse]{ClientStream: stream}
-	return x, nil
+	return out, nil
 }
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Agent_StreamRobotTelemetryClient = grpc.ClientStreamingClient[model.RobotTelemetry, StreamRobotTelemetryResponse]
 
 // AgentServer is the server API for Agent service.
 // All implementations must embed UnimplementedAgentServer
@@ -392,9 +389,9 @@ type AgentServer interface {
 	GetRtcSignal(grpc.BidiStreamingServer[GetRtcSignalResponse, GetRtcSignalRequest]) error
 	// To transfer the signaling data between RCC server and agent
 	SendSignalData(context.Context, *SignalDataRequest) (*SignalDataResponse, error)
-	// StreamRobotTelemetry receives a client stream of RobotTelemetry messages
-	// from the agent and returns an acknowledgement when the stream completes.
-	StreamRobotTelemetry(grpc.ClientStreamingServer[model.RobotTelemetry, StreamRobotTelemetryResponse]) error
+	// StreamRobotTelemetry sends a single RobotTelemetry message from the agent
+	// and returns an acknowledgement.
+	StreamRobotTelemetry(context.Context, *model.RobotTelemetry) (*StreamRobotTelemetryResponse, error)
 	mustEmbedUnimplementedAgentServer()
 }
 
@@ -456,8 +453,8 @@ func (UnimplementedAgentServer) GetRtcSignal(grpc.BidiStreamingServer[GetRtcSign
 func (UnimplementedAgentServer) SendSignalData(context.Context, *SignalDataRequest) (*SignalDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendSignalData not implemented")
 }
-func (UnimplementedAgentServer) StreamRobotTelemetry(grpc.ClientStreamingServer[model.RobotTelemetry, StreamRobotTelemetryResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method StreamRobotTelemetry not implemented")
+func (UnimplementedAgentServer) StreamRobotTelemetry(context.Context, *model.RobotTelemetry) (*StreamRobotTelemetryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StreamRobotTelemetry not implemented")
 }
 func (UnimplementedAgentServer) mustEmbedUnimplementedAgentServer() {}
 func (UnimplementedAgentServer) testEmbeddedByValue()               {}
@@ -710,12 +707,23 @@ func _Agent_SendSignalData_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_StreamRobotTelemetry_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(AgentServer).StreamRobotTelemetry(&grpc.GenericServerStream[model.RobotTelemetry, StreamRobotTelemetryResponse]{ServerStream: stream})
+func _Agent_StreamRobotTelemetry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(model.RobotTelemetry)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).StreamRobotTelemetry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_StreamRobotTelemetry_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).StreamRobotTelemetry(ctx, req.(*model.RobotTelemetry))
+	}
+	return interceptor(ctx, in, info, handler)
 }
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Agent_StreamRobotTelemetryServer = grpc.ClientStreamingServer[model.RobotTelemetry, StreamRobotTelemetryResponse]
 
 // Agent_ServiceDesc is the grpc.ServiceDesc for Agent service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -759,6 +767,10 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendSignalData",
 			Handler:    _Agent_SendSignalData_Handler,
+		},
+		{
+			MethodName: "StreamRobotTelemetry",
+			Handler:    _Agent_StreamRobotTelemetry_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -805,11 +817,6 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "GetRtcSignal",
 			Handler:       _Agent_GetRtcSignal_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "StreamRobotTelemetry",
-			Handler:       _Agent_StreamRobotTelemetry_Handler,
 			ClientStreams: true,
 		},
 	},
