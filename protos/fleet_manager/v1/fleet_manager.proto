@@ -3,7 +3,6 @@ syntax = "proto3";
 package v1.fleet_manager;
 
 option go_package = "github.com/GOAT-Robotics/gtstudio-proto/protos/v1/fleet_manager";
-import "protos/model/v1/telemetry.proto";
 
 service FleetManager {
 
@@ -12,9 +11,6 @@ service FleetManager {
     rpc HerdServices(HerdServiceRequest) returns (HerdServiceResponse) {}  // GT-server to fleet manager
 
     rpc HerdRobotTelemetry(RobotTelemetryData) returns (stream RobotTelemetryResponse) {} // Fleet manager (GT-server and each Docker service)
-
-    // Server-stream telemetry to clients using shared model.RobotTelemetry
-    rpc StreamRobotTelemetryToClient(TelemetrySubscriptionRequest) returns (stream TelemetryStreamResponse) {}
 
     rpc HerdTelemetry(stream HerdTelemetryReqest) returns (HerdTelemetryResponse) {} // HerdIQ -> Fleet manager -> GT-server
 
@@ -140,20 +136,6 @@ message RobotTelemetryResponse {
     string data = 5;
     bool status = 6;
     string message = 7;
-}
-
-// Telemetry server-streaming API
-message TelemetrySubscriptionRequest {
-    string slug_name = 1;     // tenant/workspace identifier
-    string device_id = 2;     // device to subscribe to
-    string robot = 3;         // robot identifier (optional)
-}
-
-message TelemetryStreamResponse {
-    string slug_name = 1;
-    string device_id = 2;
-    string robot = 3;
-    model.RobotTelemetry telemetry = 4; // shared telemetry payload
 }
 
 // HerdIQ Telemetry (fleet states, dispatch states)

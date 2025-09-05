@@ -37,7 +37,6 @@ const (
 	Agent_ReceiveRosMessages_FullMethodName           = "/v1.rcc.Agent/ReceiveRosMessages"
 	Agent_GetRtcSignal_FullMethodName                 = "/v1.rcc.Agent/GetRtcSignal"
 	Agent_SendSignalData_FullMethodName               = "/v1.rcc.Agent/SendSignalData"
-	Agent_StreamRobotTelemetry_FullMethodName         = "/v1.rcc.Agent/StreamRobotTelemetry"
 )
 
 // AgentClient is the client API for Agent service.
@@ -82,7 +81,8 @@ type AgentClient interface {
 	PostData(ctx context.Context, in *model.Datapoint, opts ...grpc.CallOption) (*PostDataResponse, error)
 	// PostMultiData service sends multiple datapoints from agent to rcc. These
 	// points include ros messages or system stats which is then sent to influx at
-	// the server.
+	// the server. Alternatively, a single raw byte payload can be sent using the
+	// binary fields in the request. Use one of: data or binary.
 	PostMultiData(ctx context.Context, in *PostMultiDataRequest, opts ...grpc.CallOption) (*PostMultiDataResponse, error)
 	// StreamData sends telemetry datapoints from rosnode to agent. This is used
 	// for receiving telop data such as pose, realsense camera feed etc. from ros
@@ -97,9 +97,6 @@ type AgentClient interface {
 	GetRtcSignal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[GetRtcSignalResponse, GetRtcSignalRequest], error)
 	// To transfer the signaling data between RCC server and agent
 	SendSignalData(ctx context.Context, in *SignalDataRequest, opts ...grpc.CallOption) (*SignalDataResponse, error)
-	// StreamRobotTelemetry sends a single RobotTelemetry message from the agent
-	// and returns an acknowledgement.
-	StreamRobotTelemetry(ctx context.Context, in *model.RobotTelemetry, opts ...grpc.CallOption) (*StreamRobotTelemetryResponse, error)
 }
 
 type agentClient struct {
@@ -322,16 +319,6 @@ func (c *agentClient) SendSignalData(ctx context.Context, in *SignalDataRequest,
 	return out, nil
 }
 
-func (c *agentClient) StreamRobotTelemetry(ctx context.Context, in *model.RobotTelemetry, opts ...grpc.CallOption) (*StreamRobotTelemetryResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StreamRobotTelemetryResponse)
-	err := c.cc.Invoke(ctx, Agent_StreamRobotTelemetry_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AgentServer is the server API for Agent service.
 // All implementations must embed UnimplementedAgentServer
 // for forward compatibility.
@@ -374,7 +361,8 @@ type AgentServer interface {
 	PostData(context.Context, *model.Datapoint) (*PostDataResponse, error)
 	// PostMultiData service sends multiple datapoints from agent to rcc. These
 	// points include ros messages or system stats which is then sent to influx at
-	// the server.
+	// the server. Alternatively, a single raw byte payload can be sent using the
+	// binary fields in the request. Use one of: data or binary.
 	PostMultiData(context.Context, *PostMultiDataRequest) (*PostMultiDataResponse, error)
 	// StreamData sends telemetry datapoints from rosnode to agent. This is used
 	// for receiving telop data such as pose, realsense camera feed etc. from ros
@@ -389,9 +377,6 @@ type AgentServer interface {
 	GetRtcSignal(grpc.BidiStreamingServer[GetRtcSignalResponse, GetRtcSignalRequest]) error
 	// To transfer the signaling data between RCC server and agent
 	SendSignalData(context.Context, *SignalDataRequest) (*SignalDataResponse, error)
-	// StreamRobotTelemetry sends a single RobotTelemetry message from the agent
-	// and returns an acknowledgement.
-	StreamRobotTelemetry(context.Context, *model.RobotTelemetry) (*StreamRobotTelemetryResponse, error)
 	mustEmbedUnimplementedAgentServer()
 }
 
@@ -452,9 +437,6 @@ func (UnimplementedAgentServer) GetRtcSignal(grpc.BidiStreamingServer[GetRtcSign
 }
 func (UnimplementedAgentServer) SendSignalData(context.Context, *SignalDataRequest) (*SignalDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendSignalData not implemented")
-}
-func (UnimplementedAgentServer) StreamRobotTelemetry(context.Context, *model.RobotTelemetry) (*StreamRobotTelemetryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StreamRobotTelemetry not implemented")
 }
 func (UnimplementedAgentServer) mustEmbedUnimplementedAgentServer() {}
 func (UnimplementedAgentServer) testEmbeddedByValue()               {}
@@ -707,24 +689,6 @@ func _Agent_SendSignalData_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_StreamRobotTelemetry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(model.RobotTelemetry)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentServer).StreamRobotTelemetry(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Agent_StreamRobotTelemetry_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).StreamRobotTelemetry(ctx, req.(*model.RobotTelemetry))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Agent_ServiceDesc is the grpc.ServiceDesc for Agent service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -767,10 +731,6 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendSignalData",
 			Handler:    _Agent_SendSignalData_Handler,
-		},
-		{
-			MethodName: "StreamRobotTelemetry",
-			Handler:    _Agent_StreamRobotTelemetry_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

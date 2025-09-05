@@ -6,7 +6,6 @@ import "protos/model/v1/config.proto";
 import "protos/model/v1/commands.proto";
 import "protos/model/v1/datapoint.proto";
 import "protos/model/v1/webrtc.proto";
-import "protos/model/v1/telemetry.proto";
 import "protos/model/v1/specifications.proto";
 import "protos/model/v1/actions.proto";
 
@@ -81,7 +80,8 @@ the server. */
 
   /* PostMultiData service sends multiple datapoints from agent to rcc. These
   points include ros messages or system stats which is then sent to influx at
-  the server. */
+  the server. Alternatively, a single raw byte payload can be sent using the
+  binary fields in the request. Use one of: data or binary. */
   rpc PostMultiData(PostMultiDataRequest) returns (PostMultiDataResponse) {}
 
   /* StreamData sends telemetry datapoints from rosnode to agent. This is used
@@ -107,7 +107,6 @@ the server. */
     StreamRobotTelemetry sends a single RobotTelemetry message from the agent
     and returns an acknowledgement.
   */
-  rpc StreamRobotTelemetry(model.RobotTelemetry) returns (StreamRobotTelemetryResponse) {}
 }
 
 message AuthRequest {
@@ -164,7 +163,12 @@ message GetCommandRequestStreamResponse {
 
 message PostDataResponse { bool status = 1; }
 
-message PostMultiDataRequest { repeated model.Datapoint data = 1; }
+message PostMultiDataRequest {
+  repeated model.Datapoint data = 1; // structured datapoints
+  bytes binary = 2;                  // alternative raw payload bytes
+  string content_type = 3;           // optional MIME type (e.g., application/json)
+  string topic = 4;                  // optional routing key/topic
+}
 
 message PostMultiDataResponse { bool status = 1; }
 
@@ -244,11 +248,4 @@ message SendActionResponseRequest{
 message GetActionRequestStreamResponse{
   model.ActionRequest request = 1;
   string action = 2;
-}
-
-// Robot telemetry messages moved to shared model: protos/model/v1/telemetry.proto
-
-message StreamRobotTelemetryResponse {
-  bool status = 1; // true if server processed the stream successfully
-  string error = 2; // optional error description when status is false
 }
