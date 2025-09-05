@@ -4,29 +4,12 @@ package v1.model;
 
 option go_package = "github.com/GOAT-Robotics/gtstudio-proto/protos/v1/model";
 
+import "protos/model/v1/math.proto"; // for Pose/Position/Orientation
+
 // Robot Telemetry shared model
 message RobotTelemetry {
-  Pose robot_pose = 1;       // Pose of the robot (position and orientation)
-  double percentage = 2;     // Battery percentage of the robot
-  string current_map = 3;    // The current map where the robot is operating
-  string current_state = 4;  // Current state of the robot (e.g., "READY", "NAVIGATING", etc.)
+  model.Pose robot_pose = 1;       // Pose of the robot (position and orientation)
+  double percentage = 2;           // Battery percentage of the robot
+  string current_map = 3;          // The current map where the robot is operating
+  string current_state = 4;        // Current state of the robot (e.g., "READY", "NAVIGATING", etc.)
 }
-
-message Pose {
-  Position position = 1;       // Position of the robot
-  Orientation orientation = 2; // Orientation of the robot
-}
-
-message Position {
-  double x = 1; // X coordinate of the robot
-  double y = 2; // Y coordinate of the robot
-  double z = 3; // Z coordinate (altitude) of the robot
-}
-
-message Orientation {
-  double w = 1; // W component of the quaternion
-  double x = 2; // X component of the quaternion
-  double y = 3; // Y component of the quaternion
-  double z = 4; // Z component of the quaternion
-}
-
