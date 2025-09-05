@@ -26,10 +26,10 @@ type RobotTelemetry struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RobotPose    *Pose   `protobuf:"bytes,1,opt,name=robot_pose,json=robotPose,proto3" json:"robot_pose,omitempty"`          // Pose of the robot (position and orientation)
-	Percentage   float64 `protobuf:"fixed64,2,opt,name=percentage,proto3" json:"percentage,omitempty"`                       // Battery percentage of the robot
-	CurrentMap   string  `protobuf:"bytes,3,opt,name=current_map,json=currentMap,proto3" json:"current_map,omitempty"`       // The current map where the robot is operating
-	CurrentState string  `protobuf:"bytes,4,opt,name=current_state,json=currentState,proto3" json:"current_state,omitempty"` // Current state of the robot (e.g., "READY", "NAVIGATING", etc.)
+	Pos   *Pos    `protobuf:"bytes,1,opt,name=pos,proto3" json:"pos,omitempty"`     // Pose of the robot (position and orientation)
+	Soc   float64 `protobuf:"fixed64,2,opt,name=soc,proto3" json:"soc,omitempty"`   // Battery percentage of the robot
+	Map   string  `protobuf:"bytes,3,opt,name=map,proto3" json:"map,omitempty"`     // The current map where the robot is operating
+	State string  `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"` // Current state of the robot (e.g., "READY", "NAVIGATING", etc.)
 }
 
 func (x *RobotTelemetry) Reset() {
@@ -64,32 +64,221 @@ func (*RobotTelemetry) Descriptor() ([]byte, []int) {
 	return file_protos_model_v1_telemetry_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *RobotTelemetry) GetRobotPose() *Pose {
+func (x *RobotTelemetry) GetPos() *Pos {
 	if x != nil {
-		return x.RobotPose
+		return x.Pos
 	}
 	return nil
 }
 
-func (x *RobotTelemetry) GetPercentage() float64 {
+func (x *RobotTelemetry) GetSoc() float64 {
 	if x != nil {
-		return x.Percentage
+		return x.Soc
 	}
 	return 0
 }
 
-func (x *RobotTelemetry) GetCurrentMap() string {
+func (x *RobotTelemetry) GetMap() string {
 	if x != nil {
-		return x.CurrentMap
+		return x.Map
 	}
 	return ""
 }
 
-func (x *RobotTelemetry) GetCurrentState() string {
+func (x *RobotTelemetry) GetState() string {
 	if x != nil {
-		return x.CurrentState
+		return x.State
 	}
 	return ""
+}
+
+type Pos struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Coord  *Coord  `protobuf:"bytes,1,opt,name=coord,proto3" json:"coord,omitempty"`
+	Orient *Orient `protobuf:"bytes,2,opt,name=orient,proto3" json:"orient,omitempty"`
+}
+
+func (x *Pos) Reset() {
+	*x = Pos{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protos_model_v1_telemetry_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Pos) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Pos) ProtoMessage() {}
+
+func (x *Pos) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_model_v1_telemetry_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Pos.ProtoReflect.Descriptor instead.
+func (*Pos) Descriptor() ([]byte, []int) {
+	return file_protos_model_v1_telemetry_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Pos) GetCoord() *Coord {
+	if x != nil {
+		return x.Coord
+	}
+	return nil
+}
+
+func (x *Pos) GetOrient() *Orient {
+	if x != nil {
+		return x.Orient
+	}
+	return nil
+}
+
+type Orient struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	X float64 `protobuf:"fixed64,1,opt,name=x,proto3" json:"x,omitempty"`
+	Y float64 `protobuf:"fixed64,2,opt,name=y,proto3" json:"y,omitempty"`
+	Z float64 `protobuf:"fixed64,3,opt,name=z,proto3" json:"z,omitempty"`
+	W float64 `protobuf:"fixed64,4,opt,name=w,proto3" json:"w,omitempty"`
+}
+
+func (x *Orient) Reset() {
+	*x = Orient{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protos_model_v1_telemetry_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Orient) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Orient) ProtoMessage() {}
+
+func (x *Orient) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_model_v1_telemetry_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Orient.ProtoReflect.Descriptor instead.
+func (*Orient) Descriptor() ([]byte, []int) {
+	return file_protos_model_v1_telemetry_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Orient) GetX() float64 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *Orient) GetY() float64 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *Orient) GetZ() float64 {
+	if x != nil {
+		return x.Z
+	}
+	return 0
+}
+
+func (x *Orient) GetW() float64 {
+	if x != nil {
+		return x.W
+	}
+	return 0
+}
+
+type Coord struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	X float64 `protobuf:"fixed64,1,opt,name=x,proto3" json:"x,omitempty"`
+	Y float64 `protobuf:"fixed64,2,opt,name=y,proto3" json:"y,omitempty"`
+	Z float64 `protobuf:"fixed64,3,opt,name=z,proto3" json:"z,omitempty"`
+}
+
+func (x *Coord) Reset() {
+	*x = Coord{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protos_model_v1_telemetry_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Coord) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Coord) ProtoMessage() {}
+
+func (x *Coord) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_model_v1_telemetry_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Coord.ProtoReflect.Descriptor instead.
+func (*Coord) Descriptor() ([]byte, []int) {
+	return file_protos_model_v1_telemetry_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Coord) GetX() float64 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *Coord) GetY() float64 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *Coord) GetZ() float64 {
+	if x != nil {
+		return x.Z
+	}
+	return 0
 }
 
 var File_protos_model_v1_telemetry_proto protoreflect.FileDescriptor
@@ -97,24 +286,31 @@ var File_protos_model_v1_telemetry_proto protoreflect.FileDescriptor
 var file_protos_model_v1_telemetry_proto_rawDesc = []byte{
 	0x0a, 0x1f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2f, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x2f, 0x76,
 	0x31, 0x2f, 0x74, 0x65, 0x6c, 0x65, 0x6d, 0x65, 0x74, 0x72, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x12, 0x08, 0x76, 0x31, 0x2e, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x1a, 0x1a, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x73, 0x2f, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x2f, 0x76, 0x31, 0x2f, 0x6d, 0x61, 0x74,
-	0x68, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xa5, 0x01, 0x0a, 0x0e, 0x52, 0x6f, 0x62, 0x6f,
-	0x74, 0x54, 0x65, 0x6c, 0x65, 0x6d, 0x65, 0x74, 0x72, 0x79, 0x12, 0x2d, 0x0a, 0x0a, 0x72, 0x6f,
-	0x62, 0x6f, 0x74, 0x5f, 0x70, 0x6f, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e,
-	0x2e, 0x76, 0x31, 0x2e, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x2e, 0x50, 0x6f, 0x73, 0x65, 0x52, 0x09,
-	0x72, 0x6f, 0x62, 0x6f, 0x74, 0x50, 0x6f, 0x73, 0x65, 0x12, 0x1e, 0x0a, 0x0a, 0x70, 0x65, 0x72,
-	0x63, 0x65, 0x6e, 0x74, 0x61, 0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x01, 0x52, 0x0a, 0x70,
-	0x65, 0x72, 0x63, 0x65, 0x6e, 0x74, 0x61, 0x67, 0x65, 0x12, 0x1f, 0x0a, 0x0b, 0x63, 0x75, 0x72,
-	0x72, 0x65, 0x6e, 0x74, 0x5f, 0x6d, 0x61, 0x70, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a,
-	0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x4d, 0x61, 0x70, 0x12, 0x23, 0x0a, 0x0d, 0x63, 0x75,
-	0x72, 0x72, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x0c, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x42,
-	0x39, 0x5a, 0x37, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x47, 0x4f,
-	0x41, 0x54, 0x2d, 0x52, 0x6f, 0x62, 0x6f, 0x74, 0x69, 0x63, 0x73, 0x2f, 0x67, 0x74, 0x73, 0x74,
-	0x75, 0x64, 0x69, 0x6f, 0x2d, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x73, 0x2f, 0x76, 0x31, 0x2f, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x6f, 0x12, 0x08, 0x76, 0x31, 0x2e, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x22, 0x6b, 0x0a, 0x0e, 0x52,
+	0x6f, 0x62, 0x6f, 0x74, 0x54, 0x65, 0x6c, 0x65, 0x6d, 0x65, 0x74, 0x72, 0x79, 0x12, 0x1f, 0x0a,
+	0x03, 0x70, 0x6f, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x76, 0x31, 0x2e,
+	0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x2e, 0x50, 0x6f, 0x73, 0x52, 0x03, 0x70, 0x6f, 0x73, 0x12, 0x10,
+	0x0a, 0x03, 0x73, 0x6f, 0x63, 0x18, 0x02, 0x20, 0x01, 0x28, 0x01, 0x52, 0x03, 0x73, 0x6f, 0x63,
+	0x12, 0x10, 0x0a, 0x03, 0x6d, 0x61, 0x70, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6d,
+	0x61, 0x70, 0x12, 0x14, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0x56, 0x0a, 0x03, 0x50, 0x6f, 0x73, 0x12,
+	0x25, 0x0a, 0x05, 0x63, 0x6f, 0x6f, 0x72, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f,
+	0x2e, 0x76, 0x31, 0x2e, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x2e, 0x43, 0x6f, 0x6f, 0x72, 0x64, 0x52,
+	0x05, 0x63, 0x6f, 0x6f, 0x72, 0x64, 0x12, 0x28, 0x0a, 0x06, 0x6f, 0x72, 0x69, 0x65, 0x6e, 0x74,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x76, 0x31, 0x2e, 0x6d, 0x6f, 0x64, 0x65,
+	0x6c, 0x2e, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x52, 0x06, 0x6f, 0x72, 0x69, 0x65, 0x6e, 0x74,
+	0x22, 0x40, 0x0a, 0x06, 0x4f, 0x72, 0x69, 0x65, 0x6e, 0x74, 0x12, 0x0c, 0x0a, 0x01, 0x78, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x01, 0x52, 0x01, 0x78, 0x12, 0x0c, 0x0a, 0x01, 0x79, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x01, 0x52, 0x01, 0x79, 0x12, 0x0c, 0x0a, 0x01, 0x7a, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x01, 0x52, 0x01, 0x7a, 0x12, 0x0c, 0x0a, 0x01, 0x77, 0x18, 0x04, 0x20, 0x01, 0x28, 0x01, 0x52,
+	0x01, 0x77, 0x22, 0x31, 0x0a, 0x05, 0x43, 0x6f, 0x6f, 0x72, 0x64, 0x12, 0x0c, 0x0a, 0x01, 0x78,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x01, 0x52, 0x01, 0x78, 0x12, 0x0c, 0x0a, 0x01, 0x79, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x01, 0x52, 0x01, 0x79, 0x12, 0x0c, 0x0a, 0x01, 0x7a, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x01, 0x52, 0x01, 0x7a, 0x42, 0x39, 0x5a, 0x37, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x47, 0x4f, 0x41, 0x54, 0x2d, 0x52, 0x6f, 0x62, 0x6f, 0x74, 0x69, 0x63,
+	0x73, 0x2f, 0x67, 0x74, 0x73, 0x74, 0x75, 0x64, 0x69, 0x6f, 0x2d, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2f, 0x76, 0x31, 0x2f, 0x6d, 0x6f, 0x64, 0x65, 0x6c,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -129,18 +325,22 @@ func file_protos_model_v1_telemetry_proto_rawDescGZIP() []byte {
 	return file_protos_model_v1_telemetry_proto_rawDescData
 }
 
-var file_protos_model_v1_telemetry_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_protos_model_v1_telemetry_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_protos_model_v1_telemetry_proto_goTypes = []any{
 	(*RobotTelemetry)(nil), // 0: v1.model.RobotTelemetry
-	(*Pose)(nil),           // 1: v1.model.Pose
+	(*Pos)(nil),            // 1: v1.model.Pos
+	(*Orient)(nil),         // 2: v1.model.Orient
+	(*Coord)(nil),          // 3: v1.model.Coord
 }
 var file_protos_model_v1_telemetry_proto_depIdxs = []int32{
-	1, // 0: v1.model.RobotTelemetry.robot_pose:type_name -> v1.model.Pose
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	1, // 0: v1.model.RobotTelemetry.pos:type_name -> v1.model.Pos
+	3, // 1: v1.model.Pos.coord:type_name -> v1.model.Coord
+	2, // 2: v1.model.Pos.orient:type_name -> v1.model.Orient
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_protos_model_v1_telemetry_proto_init() }
@@ -148,10 +348,45 @@ func file_protos_model_v1_telemetry_proto_init() {
 	if File_protos_model_v1_telemetry_proto != nil {
 		return
 	}
-	file_protos_model_v1_math_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_protos_model_v1_telemetry_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*RobotTelemetry); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protos_model_v1_telemetry_proto_msgTypes[1].Exporter = func(v any, i int) any {
+			switch v := v.(*Pos); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protos_model_v1_telemetry_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*Orient); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protos_model_v1_telemetry_proto_msgTypes[3].Exporter = func(v any, i int) any {
+			switch v := v.(*Coord); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -169,7 +404,7 @@ func file_protos_model_v1_telemetry_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_protos_model_v1_telemetry_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
