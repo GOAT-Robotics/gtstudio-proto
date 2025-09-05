@@ -6,6 +6,7 @@ import "protos/model/v1/config.proto";
 import "protos/model/v1/commands.proto";
 import "protos/model/v1/datapoint.proto";
 import "protos/model/v1/webrtc.proto";
+import "protos/model/v1/telemetry.proto";
 import "protos/model/v1/specifications.proto";
 import "protos/model/v1/actions.proto";
 
@@ -101,6 +102,12 @@ the server. */
       
   /*To transfer the signaling data between RCC server and agent*/
   rpc SendSignalData(SignalDataRequest) returns (SignalDataResponse) {}
+
+  /*
+    StreamRobotTelemetry receives a client stream of RobotTelemetry messages
+    from the agent and returns an acknowledgement when the stream completes.
+  */
+  rpc StreamRobotTelemetry(stream model.RobotTelemetry) returns (StreamRobotTelemetryResponse) {}
 }
 
 message AuthRequest {
@@ -237,4 +244,11 @@ message SendActionResponseRequest{
 message GetActionRequestStreamResponse{
   model.ActionRequest request = 1;
   string action = 2;
+}
+
+// Robot telemetry messages moved to shared model: protos/model/v1/telemetry.proto
+
+message StreamRobotTelemetryResponse {
+  bool status = 1; // true if server processed the stream successfully
+  string error = 2; // optional error description when status is false
 }
