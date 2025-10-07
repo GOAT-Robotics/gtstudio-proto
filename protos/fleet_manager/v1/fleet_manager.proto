@@ -6,7 +6,7 @@ option go_package = "github.com/GOAT-Robotics/gtstudio-proto/protos/v1/fleet_man
 
 service FleetManager {
 
-    rpc HerdCommandStream(stream CommandSteamRequest) returns (stream CommandSteamRespose) {} // Fleet manager (GT-server and each Docker service)
+    rpc HerdCommandStream(stream CommandStreamRequest) returns (stream CommandStreamResponse) {} // Fleet manager (GT-server and each Docker service)
 
     rpc HerdServices(HerdServiceRequest) returns (HerdServiceResponse) {}  // GT-server to fleet manager
 
@@ -61,7 +61,7 @@ enum CommandStreamActions {
     UPDATE_CUSTOM_TASK = 20;
 }
 
-message CommandSteamRequest {
+message CommandStreamRequest {
     string slug_name = 1;
     CommandStreamCommands command = 2;
     CommandStreamActions action = 3;
@@ -72,9 +72,12 @@ message CommandSteamRequest {
     string message = 8;
     string request_id = 9;
     string organization = 10;
+    string parent_id = 11;
+    string retry_count = 12;
+    string seq_id = 13;
 }
 
-message CommandSteamRespose {
+message CommandStreamResponse {
     string slug_name = 1;
     CommandStreamCommands command = 2;
     CommandStreamActions action = 3;
@@ -85,6 +88,9 @@ message CommandSteamRespose {
     string data = 8;
     string request_id = 9;
     string organization = 10;
+    string parent_id = 11;
+    string retry_count = 12;
+    string seq_id = 13;
 }
 
 // Herd Service 

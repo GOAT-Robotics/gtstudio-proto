@@ -31,7 +31,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FleetManagerClient interface {
-	HerdCommandStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[CommandSteamRequest, CommandSteamRespose], error)
+	HerdCommandStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[CommandStreamRequest, CommandStreamResponse], error)
 	HerdServices(ctx context.Context, in *HerdServiceRequest, opts ...grpc.CallOption) (*HerdServiceResponse, error)
 	HerdRobotTelemetry(ctx context.Context, in *RobotTelemetryData, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RobotTelemetryResponse], error)
 	HerdTelemetry(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[HerdTelemetryReqest, HerdTelemetryResponse], error)
@@ -47,18 +47,18 @@ func NewFleetManagerClient(cc grpc.ClientConnInterface) FleetManagerClient {
 	return &fleetManagerClient{cc}
 }
 
-func (c *fleetManagerClient) HerdCommandStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[CommandSteamRequest, CommandSteamRespose], error) {
+func (c *fleetManagerClient) HerdCommandStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[CommandStreamRequest, CommandStreamResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &FleetManager_ServiceDesc.Streams[0], FleetManager_HerdCommandStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[CommandSteamRequest, CommandSteamRespose]{ClientStream: stream}
+	x := &grpc.GenericClientStream[CommandStreamRequest, CommandStreamResponse]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type FleetManager_HerdCommandStreamClient = grpc.BidiStreamingClient[CommandSteamRequest, CommandSteamRespose]
+type FleetManager_HerdCommandStreamClient = grpc.BidiStreamingClient[CommandStreamRequest, CommandStreamResponse]
 
 func (c *fleetManagerClient) HerdServices(ctx context.Context, in *HerdServiceRequest, opts ...grpc.CallOption) (*HerdServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -138,7 +138,7 @@ type FleetManager_DockerStatsTelemetryClient = grpc.ServerStreamingClient[Docker
 // All implementations must embed UnimplementedFleetManagerServer
 // for forward compatibility.
 type FleetManagerServer interface {
-	HerdCommandStream(grpc.BidiStreamingServer[CommandSteamRequest, CommandSteamRespose]) error
+	HerdCommandStream(grpc.BidiStreamingServer[CommandStreamRequest, CommandStreamResponse]) error
 	HerdServices(context.Context, *HerdServiceRequest) (*HerdServiceResponse, error)
 	HerdRobotTelemetry(*RobotTelemetryData, grpc.ServerStreamingServer[RobotTelemetryResponse]) error
 	HerdTelemetry(grpc.ClientStreamingServer[HerdTelemetryReqest, HerdTelemetryResponse]) error
@@ -154,7 +154,7 @@ type FleetManagerServer interface {
 // pointer dereference when methods are called.
 type UnimplementedFleetManagerServer struct{}
 
-func (UnimplementedFleetManagerServer) HerdCommandStream(grpc.BidiStreamingServer[CommandSteamRequest, CommandSteamRespose]) error {
+func (UnimplementedFleetManagerServer) HerdCommandStream(grpc.BidiStreamingServer[CommandStreamRequest, CommandStreamResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method HerdCommandStream not implemented")
 }
 func (UnimplementedFleetManagerServer) HerdServices(context.Context, *HerdServiceRequest) (*HerdServiceResponse, error) {
@@ -194,11 +194,11 @@ func RegisterFleetManagerServer(s grpc.ServiceRegistrar, srv FleetManagerServer)
 }
 
 func _FleetManager_HerdCommandStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(FleetManagerServer).HerdCommandStream(&grpc.GenericServerStream[CommandSteamRequest, CommandSteamRespose]{ServerStream: stream})
+	return srv.(FleetManagerServer).HerdCommandStream(&grpc.GenericServerStream[CommandStreamRequest, CommandStreamResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type FleetManager_HerdCommandStreamServer = grpc.BidiStreamingServer[CommandSteamRequest, CommandSteamRespose]
+type FleetManager_HerdCommandStreamServer = grpc.BidiStreamingServer[CommandStreamRequest, CommandStreamResponse]
 
 func _FleetManager_HerdServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HerdServiceRequest)
