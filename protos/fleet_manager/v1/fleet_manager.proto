@@ -73,7 +73,7 @@ message CommandStreamRequest {
     string request_id = 9;
     string organization = 10;
     string parent_id = 11;
-    string retry_count = 12;
+    int64 retry_count = 12;
     string seq_id = 13;
 }
 
@@ -89,7 +89,7 @@ message CommandStreamResponse {
     string request_id = 9;
     string organization = 10;
     string parent_id = 11;
-    string retry_count = 12;
+    int64 retry_count = 12;
     string seq_id = 13;
 }
 

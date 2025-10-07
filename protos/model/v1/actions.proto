@@ -13,7 +13,7 @@ message ActionRequest {
     string data = 4;
     google.protobuf.Timestamp scrubber_time = 5;
     string parent_id = 6;
-    string retry_count = 7;
+    int64 retry_count = 7;
     string seq_id = 8;
 }
       
@@ -27,6 +27,6 @@ message ActionResponse {
     string error = 6;
   }
   string parent_id = 7;
-  string retry_count = 8;
+  int64 retry_count = 8;
   string seq_id = 9;
 }
