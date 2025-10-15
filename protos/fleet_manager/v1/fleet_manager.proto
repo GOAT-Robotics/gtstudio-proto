@@ -74,7 +74,7 @@ message CommandStreamRequest {
     string organization = 10;
     string parent_id = 11;
     int64 retry_count = 12;
-    int64 seq_id = 13;
+    int64 seq_num = 13;
 }
 
 message CommandStreamResponse {
@@ -90,7 +90,7 @@ message CommandStreamResponse {
     string organization = 10;
     string parent_id = 11;
     int64 retry_count = 12;
-    int64 seq_id = 13;
+    int64 seq_num = 13;
 }
 
 // Herd Service 
