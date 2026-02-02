@@ -59,6 +59,8 @@ enum CommandStreamActions {
     UPDATE_GOAL = 18;
     UPDATE_NAVIGATION = 19;
     UPDATE_CUSTOM_TASK = 20;
+    TRIGGER_FLOW = 21;
+    TRIGGER_CUSTOM_EVENT = 22;
 }
 
 message CommandStreamRequest {
