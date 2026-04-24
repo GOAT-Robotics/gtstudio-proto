@@ -212,7 +212,9 @@ message GetRtcSignalRequest {
   string ice_candidate=4;
   string token=5;
   model.Webrtctype request_type = 6;
-
+  string topic=7;
+  string sender_identity=8;
+  bytes payload=9;
 }
 
 message GetRtcSignalResponse {
