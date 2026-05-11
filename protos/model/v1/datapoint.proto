@@ -33,8 +33,8 @@ message Datapoint {
     Video video = 16;
     TransformTree transform_tree = 18;
     bytes raw = 19;
-    Alarm alarm = 20;
   }
+  repeated Alarm alarms = 20;
   reserved 6;
 }
 
