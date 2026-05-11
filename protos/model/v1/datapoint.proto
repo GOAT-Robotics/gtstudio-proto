@@ -33,8 +33,26 @@ message Datapoint {
     Video video = 16;
     TransformTree transform_tree = 18;
     bytes raw = 19;
+    Alarm alarm = 20;
   }
   reserved 6;
+}
+
+message AlarmStamp {
+  int64 sec = 1;
+  uint32 nanosec = 2;
+}
+
+message Alarm {
+  string code = 1;
+  string desc = 2;
+  string category = 3;
+  string severity = 4;
+  string details = 5;
+  string recovery = 6;
+  bool recoverable = 7;
+  string image = 8;
+  AlarmStamp start_stamp = 9;
 }
 
 /* ControlDatapoint contains data sent from Rcc teleop. */
