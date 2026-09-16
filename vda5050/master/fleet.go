@@ -34,6 +34,11 @@ type Options struct {
 	// suggested by §4.2 with no broker prefix.
 	Scheme vda5050.TopicScheme
 
+	// Adapters are independent MQTT wire profiles that translate to and from
+	// the canonical model. The first adapter is the default for legacy callers
+	// of Register. When empty, a single native VDA 3 adapter is used.
+	Adapters []vda5050.WireAdapter
+
 	// Discover subscribes with manufacturer/serialNumber wildcards so that any
 	// vehicle publishing on the bus is picked up automatically. With it off,
 	// only vehicles registered through Register are subscribed to — which is
@@ -74,6 +79,18 @@ type Options struct {
 	// vehicles contend for space on the same terms as native robots.
 	OnZoneRequest func(*Vehicle, vda5050.ZoneRequest) Decision
 	OnEdgeRequest func(*Vehicle, vda5050.EdgeRequest) Decision
+
+	// ReviewActiveRequests also passes requests the fleet control has already
+	// answered -- those sitting in QUEUED or GRANTED -- back to the hooks on
+	// every state message, so that a decision can be changed after the fact.
+	//
+	// Without it there is no path to REVOKED at all: §6.9 has the fleet
+	// control withdraw a permission it has granted, and Figure 16 shows
+	// exactly that transition, but a hook that only ever sees REQUESTED can
+	// never issue one. The cost is that the hooks are called once per active
+	// request per state message, so a hook that logs unconditionally will be
+	// noisy; returning a zero Decision means "no change" and is free.
+	ReviewActiveRequests bool
 }
 
 // Decision is the fleet control's answer to a vehicle request.
@@ -103,11 +120,12 @@ func Revoke() Decision { return Decision{Grant: vda5050.GrantTypeRevoked} }
 // Fleet is the VDA5050 fleet control. It owns the broker connection, the
 // vehicle registry and the publish/subscribe plumbing.
 type Fleet struct {
-	broker  transport.Broker
-	scheme  vda5050.TopicScheme
-	headers *vda5050.HeaderCounter
-	opts    Options
-	log     Logger
+	broker   transport.Broker
+	scheme   vda5050.TopicScheme
+	adapters []vda5050.WireAdapter
+	headers  *vda5050.HeaderCounter
+	opts     Options
+	log      Logger
 
 	mu       sync.RWMutex
 	vehicles map[string]*Vehicle
@@ -130,9 +148,14 @@ func NewFleet(broker transport.Broker, opts Options) *Fleet {
 	if scheme.InterfaceName == "" && scheme.Version == "" && scheme.Prefix == "" {
 		scheme = vda5050.NewTopicScheme("")
 	}
+	adapters := opts.Adapters
+	if len(adapters) == 0 {
+		adapters = []vda5050.WireAdapter{&vda5050.V3WireAdapter{Scheme: scheme}}
+	}
 	return &Fleet{
 		broker:   broker,
 		scheme:   scheme,
+		adapters: adapters,
 		headers:  vda5050.NewHeaderCounter(),
 		opts:     opts,
 		log:      opts.Log,
@@ -159,11 +182,11 @@ func (f *Fleet) Start(ctx context.Context) error {
 	// installs them in its OnConnect callback, so no retained message
 	// published between connect and subscribe can slip past.
 	if f.opts.Discover {
-		for _, t := range vda5050.RobotTopics {
-			topic := t
-			filter := f.scheme.SubscribeAll(topic)
-			if err := f.broker.Subscribe(ctx, filter, topic.QoS(), f.handler(topic)); err != nil {
-				return fmt.Errorf("vda5050: subscribing to %s: %w", filter, err)
+		for _, adapter := range f.adapters {
+			for _, sub := range adapter.Subscriptions() {
+				if err := f.broker.Subscribe(ctx, sub.Filter, sub.QoS, f.handler(adapter, sub.Topic)); err != nil {
+					return fmt.Errorf("vda5050: subscribing to %s: %w", sub.Filter, err)
+				}
 			}
 		}
 	} else {
@@ -201,17 +224,44 @@ func (f *Fleet) Stop() error {
 // Register adds a vehicle to the roster and, once started, subscribes to its
 // topics. It is idempotent, so it is safe to call on every config refresh.
 func (f *Fleet) Register(ctx context.Context, id vda5050.Identity) (*Vehicle, error) {
+	adapter := f.adapters[0]
+	versions := adapter.SupportedVersions()
+	version := ""
+	if len(versions) != 0 {
+		version = versions[0]
+	}
+	return f.RegisterProtocol(ctx, id, adapter.Name(), version)
+}
+
+// RegisterProtocol registers a vehicle against an exact adapter/version. This
+// is used for persisted devices; discovery learns the same values from wire
+// messages. It is safe to call repeatedly as fresher protocol information is
+// observed.
+func (f *Fleet) RegisterProtocol(ctx context.Context, id vda5050.Identity, adapterName, version string) (*Vehicle, error) {
 	if err := id.Valid(); err != nil {
 		return nil, err
+	}
+	adapter := f.adapter(adapterName)
+	if adapter == nil {
+		return nil, fmt.Errorf("vda5050: unknown wire adapter %q", adapterName)
+	}
+	if version == "" {
+		versions := adapter.SupportedVersions()
+		if len(versions) != 0 {
+			version = versions[0]
+		}
 	}
 	f.mu.Lock()
 	v, ok := f.vehicles[id.String()]
 	if !ok {
-		v = newVehicle(id, f.headers)
+		v = newVehicle(id, f.headers, adapter, version)
 		f.vehicles[id.String()] = v
 	}
 	started := f.started
 	f.mu.Unlock()
+	if ok {
+		v.setProtocol(adapter, version)
+	}
 
 	if !ok {
 		f.log.Infof("[vda5050] registered vehicle %s", id)
@@ -226,27 +276,45 @@ func (f *Fleet) Register(ctx context.Context, id vda5050.Identity) (*Vehicle, er
 	return v, nil
 }
 
+func (f *Fleet) adapter(name string) vda5050.WireAdapter {
+	for _, adapter := range f.adapters {
+		if adapter.Name() == name {
+			return adapter
+		}
+	}
+	return nil
+}
+
 // Deregister removes a vehicle and its subscriptions.
 func (f *Fleet) Deregister(ctx context.Context, id vda5050.Identity) {
 	f.mu.Lock()
+	v := f.vehicles[id.String()]
 	delete(f.vehicles, id.String())
 	f.mu.Unlock()
 	f.headers.Reset(id)
 
 	if f.Enabled() && !f.opts.Discover {
-		for _, t := range vda5050.RobotTopics {
-			_ = f.broker.Unsubscribe(ctx, f.scheme.Build(id, t))
+		if adapter, _ := v.wireProtocol(); adapter != nil {
+			for _, sub := range adapter.VehicleSubscriptions(id) {
+				_ = f.broker.Unsubscribe(ctx, sub.Filter)
+			}
 		}
 	}
 	f.log.Infof("[vda5050] deregistered vehicle %s", id)
 }
 
 func (f *Fleet) subscribeVehicle(ctx context.Context, id vda5050.Identity) error {
-	for _, t := range vda5050.RobotTopics {
-		topic := t
-		filter := f.scheme.Build(id, topic)
-		if err := f.broker.Subscribe(ctx, filter, topic.QoS(), f.handler(topic)); err != nil {
-			return fmt.Errorf("vda5050: subscribing to %s: %w", filter, err)
+	v := f.Vehicle(id)
+	if v == nil {
+		return ErrNotRegistered
+	}
+	adapter, _ := v.wireProtocol()
+	if adapter == nil {
+		return errors.New("vda5050: vehicle has no wire adapter")
+	}
+	for _, sub := range adapter.VehicleSubscriptions(id) {
+		if err := f.broker.Subscribe(ctx, sub.Filter, sub.QoS, f.handler(adapter, sub.Topic)); err != nil {
+			return fmt.Errorf("vda5050: subscribing to %s: %w", sub.Filter, err)
 		}
 	}
 	return nil
@@ -359,47 +427,47 @@ func (f *Fleet) publish(ctx context.Context, id vda5050.Identity, topic vda5050.
 	if f.Vehicle(id) == nil {
 		return fmt.Errorf("%w: %s", ErrNotRegistered, id)
 	}
-	if f.opts.ValidateOutgoing {
-		if err := vda5050.Validate(topic, msg); err != nil {
-			return err
-		}
+	v := f.Vehicle(id)
+	adapter, version := v.wireProtocol()
+	if adapter == nil {
+		return errors.New("vda5050: vehicle has no wire adapter")
 	}
-	payload, err := json.Marshal(msg)
+	wire, err := adapter.Encode(id, version, topic, msg)
 	if err != nil {
-		return fmt.Errorf("vda5050: marshalling %s for %s: %w", topic, id, err)
+		return err
 	}
-	t := f.scheme.Build(id, topic)
-	f.log.Debugf("[vda5050] -> %s (%d bytes)", t, len(payload))
-	return f.broker.Publish(ctx, t, topic.QoS(), topic.Retained(), payload)
+	f.log.Debugf("[vda5050] -> %s via %s/%s (%d bytes)", wire.Topic, adapter.Name(), version, len(wire.Payload))
+	return f.broker.Publish(ctx, wire.Topic, wire.QoS, wire.Retained, wire.Payload)
 }
 
 // ---------------------------------------------------------------------------
 // Receiving
 // ---------------------------------------------------------------------------
 
-func (f *Fleet) handler(topic vda5050.Topic) transport.Handler {
+func (f *Fleet) handler(adapter vda5050.WireAdapter, topic vda5050.Topic) transport.Handler {
 	return func(m transport.Message) {
-		id, parsed, err := f.scheme.Parse(m.Topic)
+		decoded, err := adapter.Decode(m.Topic, m.Payload)
 		if err != nil {
 			// Another system's traffic on a shared broker; ignore quietly.
 			f.log.Debugf("[vda5050] ignoring message on %s: %v", m.Topic, err)
 			return
 		}
-		if parsed != topic {
+		if decoded.Topic != topic {
 			return
 		}
-		if f.opts.ValidateIncoming {
-			if err := vda5050.ValidateRaw(topic, m.Payload); err != nil {
-				f.log.Warnf("[vda5050] %s from %s does not match the schema, processing anyway: %v", topic, id, err)
+		if f.opts.ValidateIncoming && adapter.Name() == "vda5050-v3" {
+			if err := vda5050.ValidateRaw(topic, decoded.Payload); err != nil {
+				f.log.Warnf("[vda5050] %s from %s does not match the schema, processing anyway: %v", topic, decoded.Identity, err)
 			}
 		}
-		if err := f.dispatch(id, topic, m); err != nil {
-			f.log.Errorf("[vda5050] handling %s from %s: %v", topic, id, err)
+		canonical := transport.Message{Topic: m.Topic, Payload: decoded.Payload, Retained: m.Retained}
+		if err := f.dispatch(decoded.Identity, topic, canonical, adapter, decoded.Version); err != nil {
+			f.log.Errorf("[vda5050] handling %s from %s: %v", topic, decoded.Identity, err)
 		}
 	}
 }
 
-func (f *Fleet) dispatch(id vda5050.Identity, topic vda5050.Topic, m transport.Message) error {
+func (f *Fleet) dispatch(id vda5050.Identity, topic vda5050.Topic, m transport.Message, adapter vda5050.WireAdapter, version string) error {
 	v := f.Vehicle(id)
 	if v == nil {
 		if !f.opts.Discover {
@@ -407,12 +475,13 @@ func (f *Fleet) dispatch(id vda5050.Identity, topic vda5050.Topic, m transport.M
 			return nil
 		}
 		var err error
-		v, err = f.Register(context.Background(), id)
+		v, err = f.RegisterProtocol(context.Background(), id, adapter.Name(), version)
 		if err != nil {
 			return err
 		}
 		f.log.Infof("[vda5050] discovered vehicle %s", id)
 	}
+	v.setProtocol(adapter, version)
 
 	switch topic {
 	case vda5050.TopicState:
@@ -474,10 +543,25 @@ func (f *Fleet) dispatch(id vda5050.Identity, topic vda5050.Topic, m transport.M
 	return nil
 }
 
+// decidable reports whether a request in this state still wants a decision
+// from the fleet control.
+//
+// REQUESTED always does. QUEUED and GRANTED do only when the fleet control
+// asked to review them, which is what makes revocation and lease extension
+// possible. REJECTED, REVOKED and EXPIRED are terminal: the vehicle is about
+// to drop the request from its state, and answering again would churn it.
+func (f *Fleet) decidable(status vda5050.RequestStatus) bool {
+	switch status {
+	case vda5050.RequestStatusRequested:
+		return true
+	case vda5050.RequestStatusQueued, vda5050.RequestStatusGranted:
+		return f.opts.ReviewActiveRequests
+	}
+	return false
+}
+
 // answerRequests replies to zone and corridor requests carried in a state
-// message. Only requests still in REQUESTED are considered: the others are
-// echoes of decisions already made, and answering them again would churn the
-// vehicle's state.
+// message (§6.9).
 func (f *Fleet) answerRequests(v *Vehicle, s *vda5050.State) {
 	if f.opts.OnZoneRequest == nil && f.opts.OnEdgeRequest == nil {
 		return
@@ -486,7 +570,7 @@ func (f *Fleet) answerRequests(v *Vehicle, s *vda5050.State) {
 
 	if f.opts.OnZoneRequest != nil {
 		for _, r := range s.ZoneRequests {
-			if r.RequestStatus != vda5050.RequestStatusRequested {
+			if !f.decidable(r.RequestStatus) {
 				continue
 			}
 			if resp, ok := toResponse(r.RequestID, f.opts.OnZoneRequest(v, r)); ok {
@@ -496,7 +580,7 @@ func (f *Fleet) answerRequests(v *Vehicle, s *vda5050.State) {
 	}
 	if f.opts.OnEdgeRequest != nil {
 		for _, r := range s.EdgeRequests {
-			if r.RequestStatus != vda5050.RequestStatusRequested {
+			if !f.decidable(r.RequestStatus) {
 				continue
 			}
 			if resp, ok := toResponse(r.RequestID, f.opts.OnEdgeRequest(v, r)); ok {
@@ -510,6 +594,40 @@ func (f *Fleet) answerRequests(v *Vehicle, s *vda5050.State) {
 	if err := f.SendResponses(context.Background(), v.ID, responses...); err != nil {
 		f.log.Errorf("[vda5050] answering requests from %s: %v", v.ID, err)
 	}
+}
+
+// RevokeRequests withdraws permissions the fleet control granted earlier
+// (§6.9). The vehicle reacts according to the releaseLossBehavior defined for
+// the resource: stopping, continuing, or evacuating a zone; returning to the
+// predefined trajectory of an edge.
+//
+// A revoked grant is not instantaneous. The fleet control "shall assume a
+// REVOKED request as still being GRANTED until the requestStatus of the
+// mobile robot is set to REVOKED", so the space stays committed until the
+// vehicle's own state confirms it has let go.
+func (f *Fleet) RevokeRequests(ctx context.Context, id vda5050.Identity, requestIDs ...string) error {
+	if len(requestIDs) == 0 {
+		return nil
+	}
+	responses := make([]vda5050.Response, 0, len(requestIDs))
+	for _, rid := range requestIDs {
+		responses = append(responses, vda5050.Response{
+			RequestID: rid,
+			GrantType: vda5050.GrantTypeRevoked,
+		})
+	}
+	return f.SendResponses(ctx, id, responses...)
+}
+
+// ExtendLease re-grants a request with a later expiry (§6.9). Sending an
+// updated response with the same requestId and a new leaseExpiry is the only
+// way to keep a vehicle inside a RELEASE zone past its original lease.
+func (f *Fleet) ExtendLease(ctx context.Context, id vda5050.Identity, requestID string, until time.Time) error {
+	resp, ok := toResponse(requestID, Grant(until))
+	if !ok {
+		return errors.New("vda5050: lease extension needs a grant decision")
+	}
+	return f.SendResponses(ctx, id, resp)
 }
 
 func toResponse(requestID string, d Decision) (vda5050.Response, bool) {

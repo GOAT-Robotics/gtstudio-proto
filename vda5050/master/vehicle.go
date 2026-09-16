@@ -30,6 +30,11 @@ type Vehicle struct {
 	// Orders tracks orderIds, orderUpdateIds and the base/horizon split.
 	Orders *vda5050.OrderTracker
 
+	// adapter and protocolVersion identify the wire profile used by this
+	// vehicle. Backend and herdIQ only see the canonical model.
+	adapter         vda5050.WireAdapter
+	protocolVersion string
+
 	mu sync.RWMutex
 
 	state   *vda5050.State
@@ -48,16 +53,41 @@ type Vehicle struct {
 	firstSeen time.Time
 }
 
-func newVehicle(id vda5050.Identity, headers *vda5050.HeaderCounter) *Vehicle {
+func newVehicle(id vda5050.Identity, headers *vda5050.HeaderCounter, adapter vda5050.WireAdapter, version string) *Vehicle {
 	return &Vehicle{
-		ID:        id,
-		Orders:    vda5050.NewOrderTracker(id, headers),
-		firstSeen: time.Now(),
+		ID:              id,
+		Orders:          vda5050.NewOrderTracker(id, headers),
+		adapter:         adapter,
+		protocolVersion: version,
+		firstSeen:       time.Now(),
 		// A vehicle that has not published a connection message yet is
 		// treated as offline rather than online: assuming the optimistic case
 		// would let herdIQ dispatch to a vehicle that is not listening.
 		conn: vda5050.ConnectionStateOffline,
 	}
+}
+
+// Protocol reports the selected ingress/egress adapter and exact wire
+// version. It is safe to expose in status APIs and logs.
+func (v *Vehicle) Protocol() (adapter, version string) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+	if v.adapter != nil {
+		adapter = v.adapter.Name()
+	}
+	return adapter, v.protocolVersion
+}
+
+func (v *Vehicle) setProtocol(adapter vda5050.WireAdapter, version string) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	v.adapter, v.protocolVersion = adapter, version
+}
+
+func (v *Vehicle) wireProtocol() (vda5050.WireAdapter, string) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+	return v.adapter, v.protocolVersion
 }
 
 // State returns the most recent state message, or nil if none has arrived.
@@ -127,7 +157,12 @@ func (v *Vehicle) Dispatchable(staleAfter time.Duration) (bool, string) {
 		return false, "vehicle is offline or its state is stale"
 	}
 	s := v.State()
-	if !s.OperatingMode.CanDrive() {
+	// Table 11 governs which modes accept an order, and it is wider than the
+	// set in which fleet control does the steering: an INTERVENED vehicle is
+	// being handled locally but may still be given an order to execute once it
+	// returns to AUTOMATIC or SEMIAUTOMATIC. §6.1.4.9 agrees -- it raises
+	// MOBILE_ROBOT_NOT_AVAILABLE only outside those three modes.
+	if !s.OperatingMode.AcceptsOrders() {
 		return false, "vehicle is in operating mode " + string(s.OperatingMode)
 	}
 	if vda5050.BoolOr(s.Paused, false) {
@@ -227,6 +262,137 @@ func (v *Vehicle) ActionsNeedingIntervention() []vda5050.ActionState {
 		}
 	}
 	return out
+}
+
+// Maps returns the maps the vehicle currently holds (§6.3.2). An empty result
+// means either that the vehicle has no maps or that it does not report them;
+// HasMap distinguishes the cases only in the sense that it answers false for
+// both, which is the safe reading.
+func (v *Vehicle) Maps() []vda5050.Map {
+	s := v.State()
+	if s == nil {
+		return nil
+	}
+	return append([]vda5050.Map(nil), s.Maps...)
+}
+
+// HasMap reports whether the vehicle holds a map with this mapId in any
+// version, and whether one of those versions is ENABLED.
+//
+// §6.3.1 requires the vehicle to reject an order whose nodes reference a mapId
+// it does not hold, with UNKNOWN_MAP_ID. Checking before dispatch turns that
+// rejection -- which arrives asynchronously on the state topic, several
+// seconds later, after the task has already been counted as sent -- into a
+// decision the fleet control can act on while it still has options.
+func (v *Vehicle) HasMap(mapID string) (held, enabled bool) {
+	s := v.State()
+	if s == nil {
+		return false, false
+	}
+	for _, m := range s.Maps {
+		if m.MapID != mapID {
+			continue
+		}
+		held = true
+		if m.MapStatus == vda5050.MapStatusEnabled {
+			enabled = true
+		}
+	}
+	return held, enabled
+}
+
+// EnabledMap returns the version of a mapId the vehicle currently has enabled.
+// At most one version of a given mapId may be ENABLED at a time (§6.3.2).
+func (v *Vehicle) EnabledMap(mapID string) (vda5050.Map, bool) {
+	s := v.State()
+	if s == nil {
+		return vda5050.Map{}, false
+	}
+	for _, m := range s.Maps {
+		if m.MapID == mapID && m.MapStatus == vda5050.MapStatusEnabled {
+			return m, true
+		}
+	}
+	return vda5050.Map{}, false
+}
+
+// ReportsMaps tells whether the vehicle publishes a maps array at all. A
+// vehicle that never reports one is not necessarily non-conformant -- the
+// field is optional -- but it means HasMap can never be trusted to say "no",
+// so a caller must not refuse to dispatch on the strength of it.
+func (v *Vehicle) ReportsMaps() bool {
+	s := v.State()
+	return s != nil && s.Maps != nil
+}
+
+// ZoneSets returns the zone sets the vehicle holds (§6.4.2).
+func (v *Vehicle) ZoneSets() []vda5050.ZoneSetInfo {
+	s := v.State()
+	if s == nil {
+		return nil
+	}
+	return append([]vda5050.ZoneSetInfo(nil), s.ZoneSets...)
+}
+
+// EnabledZoneSet returns the zone set currently active for a map. At most one
+// zone set per map may be ENABLED (§6.4.2).
+func (v *Vehicle) EnabledZoneSet(mapID string) (vda5050.ZoneSetInfo, bool) {
+	s := v.State()
+	if s == nil {
+		return vda5050.ZoneSetInfo{}, false
+	}
+	for _, z := range s.ZoneSets {
+		if z.MapID == mapID && z.ZoneSetStatus == vda5050.ZoneSetStatusEnabled {
+			return z, true
+		}
+	}
+	return vda5050.ZoneSetInfo{}, false
+}
+
+// OpenRequests returns the zone and corridor requests the vehicle is waiting
+// on -- those still in REQUESTED. A vehicle sitting on one of these is not
+// stuck and not faulted; it is waiting for the fleet control to answer, and
+// will wait indefinitely (§6.9).
+func (v *Vehicle) OpenRequests() (zones []vda5050.ZoneRequest, edges []vda5050.EdgeRequest) {
+	s := v.State()
+	if s == nil {
+		return nil, nil
+	}
+	for _, r := range s.ZoneRequests {
+		if r.RequestStatus == vda5050.RequestStatusRequested {
+			zones = append(zones, r)
+		}
+	}
+	for _, r := range s.EdgeRequests {
+		if r.RequestStatus == vda5050.RequestStatusRequested {
+			edges = append(edges, r)
+		}
+	}
+	return zones, edges
+}
+
+// Rejection returns the order rejection the vehicle is reporting, if any
+// (§6.1.4). Every rejection is reported "until a new order is accepted", so
+// its presence means the last order this fleet control sent was not taken.
+func (v *Vehicle) Rejection() *vda5050.Error {
+	return vda5050.RejectionIn(v.State())
+}
+
+// SupportsZone reports whether the factsheet advertises support for a zone
+// type (§6.4, typeSpecification.supportedZones). Sending a zone set a vehicle
+// cannot interpret is worse than sending none: the vehicle will drive through
+// a BLOCKED area believing it is free.
+func (v *Vehicle) SupportsZone(zoneType vda5050.ZoneType) bool {
+	fs := v.Factsheet()
+	if fs == nil {
+		return false
+	}
+	for _, z := range fs.TypeSpecification.SupportedZones {
+		if string(z) == string(zoneType) {
+			return true
+		}
+	}
+	return false
 }
 
 // SupportsAction reports whether the factsheet advertises an action type. It

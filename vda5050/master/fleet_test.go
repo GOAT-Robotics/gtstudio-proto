@@ -104,6 +104,44 @@ func (b *fakeBroker) sent() []publication {
 	return append([]publication(nil), b.published...)
 }
 
+func TestV2AdapterRunsBehindCanonicalFleet(t *testing.T) {
+	b := newFakeBroker()
+	adapter := vda5050.NewV2WireAdapter(vda5050.V2WireOptions{
+		Name: "custom-v2", VersionLevel: "v2.0.0", DefaultVersion: "2.0.0",
+		TopicAliases:        map[vda5050.Topic]string{vda5050.TopicConnection: "connect"},
+		HeaderVersionPrefix: "v", NumericConnectionState: map[int]vda5050.ConnectionState{2: vda5050.ConnectionStateOnline},
+	})
+	f := NewFleet(b, Options{Adapters: []vda5050.WireAdapter{vda5050.NewV3WireAdapter(""), adapter}})
+	ctx := context.Background()
+	id := vda5050.Identity{Manufacturer: "ACME", SerialNumber: "R-001"}
+	if _, err := f.RegisterProtocol(ctx, id, adapter.Name(), "2.0.0"); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	b.deliver("uagv/v2.0.0/ACME/R-001/state", []byte(`{"actionStates":[],"agvPosition":{"mapId":"L1","positionInitialized":true,"theta":0,"x":1,"y":2},"batteryState":{"batteryCharge":75,"charging":false},"driving":false,"edgeStates":[],"errors":[],"headerId":1,"lastNodeId":"","lastNodeSequenceId":0,"nodeStates":[],"operatingMode":"AUTOMATIC","orderId":"","orderUpdateId":0,"safetyState":{"eStop":"NONE","fieldViolation":false},"timestamp":"2026-09-16T00:00:00Z","version":"v2.0.0"}`))
+	v := f.Vehicle(id)
+	if v.State() == nil {
+		t.Fatal("VDA 2 state did not reach canonical fleet")
+	}
+	if got, _ := v.BatteryCharge(); got != 75 {
+		t.Fatalf("battery=%v", got)
+	}
+
+	order := &vda5050.Order{HeaderID: 2, Timestamp: vda5050.Now(), Version: vda5050.ProtocolVersion,
+		Manufacturer: id.Manufacturer, SerialNumber: id.SerialNumber, OrderID: "o1",
+		Nodes: []vda5050.Node{{NodeID: "n1", Actions: []vda5050.Action{}}}, Edges: []vda5050.Edge{}}
+	if err := f.SendOrder(ctx, id, order); err != nil {
+		t.Fatal(err)
+	}
+	sent := b.sent()
+	if len(sent) != 1 || sent[0].Topic != "uagv/v2.0.0/ACME/R-001/order" {
+		t.Fatalf("unexpected VDA 2 publish: %+v", sent)
+	}
+}
+
 // ---------------------------------------------------------------------------
 
 var testID = vda5050.Identity{Manufacturer: "KIT", SerialNumber: "0001"}
