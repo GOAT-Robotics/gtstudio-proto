@@ -132,7 +132,9 @@ message SpecsResponse {
   bool status = 1; 
 }
 
-message GetAgentConfigurationRequest {}
+message GetAgentConfigurationRequest {
+  map<string, string> config_version = 1;
+}
 
 message GetAgentConfigurationResponse {
   model.AgentConfigurationStore configuration = 1;
