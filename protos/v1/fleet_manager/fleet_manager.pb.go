@@ -143,6 +143,8 @@ const (
 	CommandStreamActions_UPDATE_ROBOT_CONFIG       CommandStreamActions = 30
 	CommandStreamActions_GET_STATIONS              CommandStreamActions = 31
 	CommandStreamActions_UPDATE_STATIONS           CommandStreamActions = 32
+	CommandStreamActions_GET_SHELVES               CommandStreamActions = 33
+	CommandStreamActions_UPDATE_SHELVES            CommandStreamActions = 34
 )
 
 // Enum value maps for CommandStreamActions.
@@ -181,6 +183,8 @@ var (
 		30: "UPDATE_ROBOT_CONFIG",
 		31: "GET_STATIONS",
 		32: "UPDATE_STATIONS",
+		33: "GET_SHELVES",
+		34: "UPDATE_SHELVES",
 	}
 	CommandStreamActions_value = map[string]int32{
 		"COMMAND_ACTION_UNKNOWN":    0,
@@ -216,6 +220,8 @@ var (
 		"UPDATE_ROBOT_CONFIG":       30,
 		"GET_STATIONS":              31,
 		"UPDATE_STATIONS":           32,
+		"GET_SHELVES":               33,
+		"UPDATE_SHELVES":            34,
 	}
 )
 
@@ -1727,7 +1733,7 @@ const file_protos_fleet_manager_v1_fleet_manager_proto_rawDesc = "" +
 	"\x04LANE\x10\v\x12\f\n" +
 	"\bSETTINGS\x10\f\x12\f\n" +
 	"\bPLATFORM\x10\r\x12\x12\n" +
-	"\x0eUPDATE_STATION\x10\x0e*\x9e\x05\n" +
+	"\x0eUPDATE_STATION\x10\x0e*\xc3\x05\n" +
 	"\x14CommandStreamActions\x12\x1a\n" +
 	"\x16COMMAND_ACTION_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vCANCEL_GOAL\x10\x01\x12\r\n" +
@@ -1766,7 +1772,9 @@ const file_protos_fleet_manager_v1_fleet_manager_proto_rawDesc = "" +
 	"\x19UPDATE_PLATFORM_INSTANCES\x10\x1d\x12\x17\n" +
 	"\x13UPDATE_ROBOT_CONFIG\x10\x1e\x12\x10\n" +
 	"\fGET_STATIONS\x10\x1f\x12\x13\n" +
-	"\x0fUPDATE_STATIONS\x10 *l\n" +
+	"\x0fUPDATE_STATIONS\x10 \x12\x0f\n" +
+	"\vGET_SHELVES\x10!\x12\x12\n" +
+	"\x0eUPDATE_SHELVES\x10\"*l\n" +
 	"\vHerdActions\x12\x17\n" +
 	"\x13HERD_ACTION_UNKNOWN\x10\x00\x12\n" +
 	"\n" +

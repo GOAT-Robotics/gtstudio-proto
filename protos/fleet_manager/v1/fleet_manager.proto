@@ -73,6 +73,8 @@ enum CommandStreamActions {
     UPDATE_ROBOT_CONFIG = 30;
     GET_STATIONS = 31;
     UPDATE_STATIONS = 32;
+    GET_SHELVES = 33;
+    UPDATE_SHELVES = 34;
 }
 
 message CommandStreamRequest {
