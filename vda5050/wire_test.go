@@ -83,9 +83,12 @@ func TestV2OrderEgressAddsLegacyShape(t *testing.T) {
 }
 
 func TestV2InstantActionVersionDifference(t *testing.T) {
-	a := NewV2WireAdapter(V2WireOptions{})
 	msg := &InstantActions{Actions: []InstantAction{{ActionType: ActionInitializePosition, ActionID: "a1", BlockingType: InstantActionBlockingTypeNone}}}
-	for _, tc := range []struct{ version, key string }{{"2.0.0", "actionName"}, {"2.1.0", "actionType"}} {
+	for _, tc := range []struct {
+		version, key string
+		original200  bool
+	}{{"2.0.0", "actionType", false}, {"2.0.0", "actionName", true}, {"2.1.0", "actionType", false}} {
+		a := NewV2WireAdapter(V2WireOptions{OriginalV200Schema: tc.original200})
 		wire, err := a.Encode(Identity{Manufacturer: "KIT", SerialNumber: "1"}, tc.version, TopicInstantActions, msg)
 		if err != nil {
 			t.Fatal(err)

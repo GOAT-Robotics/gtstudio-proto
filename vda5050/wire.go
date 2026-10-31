@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // WireAdapter is the MQTT wire-format boundary for a robot protocol revision
@@ -102,11 +104,29 @@ type V2WireOptions struct {
 	TopicAliases           map[Topic]string
 	HeaderVersionPrefix    string
 	NumericConnectionState map[int]ConnectionState
+	// OriginalV200Schema targets vehicles built against the JSON schemas first
+	// published with 2.0.0, which VDA corrected in 2024 without changing the
+	// specification: actionName instead of actionType in instantActions,
+	// allowedDeviationXy instead of allowedDeviationXY, and no orientationType.
+	OriginalV200Schema bool
 }
 
 // V2WireAdapter supports both 2.0.0 and the backward-compatible 2.1.0.
 // The exact version is retained per vehicle and used for outbound messages.
-type V2WireAdapter struct{ opts V2WireOptions }
+type V2WireAdapter struct {
+	opts V2WireOptions
+
+	// VDA 2 reports instant actions inside actionStates; VDA 3 reports them in
+	// instantActionStates. The actionIds sent as instant actions are remembered
+	// per vehicle so state can be split the way canonical consumers expect.
+	mu      sync.Mutex
+	instant map[Identity][]string
+}
+
+// v2InstantActionMemory bounds the remembered instant actionIds per vehicle.
+// A vehicle reports an instant action until its next order clears it, so only
+// recent ids matter.
+const v2InstantActionMemory = 128
 
 func NewV2WireAdapter(opts V2WireOptions) *V2WireAdapter {
 	if opts.Name == "" {
@@ -119,7 +139,46 @@ func NewV2WireAdapter(opts V2WireOptions) *V2WireAdapter {
 		opts.VersionLevel = "v2"
 	}
 	opts.Prefix = strings.Trim(opts.Prefix, "/")
-	return &V2WireAdapter{opts: opts}
+	return &V2WireAdapter{opts: opts, instant: make(map[Identity][]string)}
+}
+
+func (a *V2WireAdapter) rememberInstantActions(id Identity, actions []any) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	ids := a.instant[id]
+	for _, item := range actions {
+		if actionID := stringValue(object(item)["actionId"]); actionID != "" {
+			ids = append(ids, actionID)
+		}
+	}
+	if len(ids) > v2InstantActionMemory {
+		ids = append([]string(nil), ids[len(ids)-v2InstantActionMemory:]...)
+	}
+	a.instant[id] = ids
+}
+
+// splitInstantActionStates moves the states of instant actions sent by this
+// fleet control from actionStates into the canonical instantActionStates.
+func (a *V2WireAdapter) splitInstantActionStates(id Identity, body map[string]any) {
+	a.mu.Lock()
+	sent := make(map[string]bool, len(a.instant[id]))
+	for _, actionID := range a.instant[id] {
+		sent[actionID] = true
+	}
+	a.mu.Unlock()
+	order := []any{}
+	instant := array(body["instantActionStates"])
+	if instant == nil {
+		instant = []any{}
+	}
+	for _, item := range array(body["actionStates"]) {
+		if sent[stringValue(object(item)["actionId"])] {
+			instant = append(instant, item)
+		} else {
+			order = append(order, item)
+		}
+	}
+	body["actionStates"], body["instantActionStates"] = order, instant
 }
 
 func (a *V2WireAdapter) Name() string { return a.opts.Name }
@@ -214,6 +273,9 @@ func (a *V2WireAdapter) Decode(wireTopic string, payload []byte) (DecodedWireMes
 	if err := a.toCanonical(topic, body); err != nil {
 		return DecodedWireMessage{}, err
 	}
+	if topic == TopicState {
+		a.splitInstantActionStates(id, body)
+	}
 	canonical, err := json.Marshal(body)
 	if err != nil {
 		return DecodedWireMessage{}, err
@@ -235,11 +297,21 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 		}
 		if s := object(body["safetyState"]); s != nil {
 			rename(s, "eStop", "activeEmergencyStop")
+			// VDA 3 dropped AUTOACK. It signals a bumper or protective-field
+			// stop that clears itself, which VDA 3 reports as fieldViolation.
+			if s["activeEmergencyStop"] == "AUTOACK" {
+				s["activeEmergencyStop"] = string(ActiveEmergencyStopNone)
+				s["fieldViolation"] = true
+			}
+		}
+		if body["operatingMode"] == "TEACHIN" {
+			body["operatingMode"] = string(OperatingModeTeachIn)
 		}
 		for _, item := range array(body["actionStates"]) {
 			if action := object(item); action != nil {
 				rename(action, "actionDescription", "actionDescriptor")
 				rename(action, "resultDescription", "actionResult")
+				canonicalV2ActionType(action)
 			}
 		}
 		for _, item := range array(body["nodeStates"]) {
@@ -270,6 +342,9 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 			}
 			body["connectionState"] = string(state)
 		}
+		if body["connectionState"] == "CONNECTIONBROKEN" {
+			body["connectionState"] = string(ConnectionStateConnectionBroken)
+		}
 		if _, ok := body["headerId"]; !ok {
 			body["headerId"] = float64(0)
 		}
@@ -296,8 +371,8 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 				rename(strings, "msgLen", "maximumMessageLength")
 				rename(strings, "topicSerialLen", "maximumTopicSerialLength")
 				rename(strings, "topicElemLen", "maximumTopicElementLength")
-				rename(strings, "idLen", "maximumIDLength")
-				rename(strings, "loadIdLen", "maximumLoadIDLength")
+				rename(strings, "idLen", "maximumIdLength")
+				rename(strings, "loadIdLen", "maximumLoadIdLength")
 			}
 			if timing := object(limits["timing"]); timing != nil {
 				rename(timing, "minOrderInterval", "minimumOrderInterval")
@@ -309,6 +384,13 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 			for _, item := range array(pf["mobileRobotActions"]) {
 				if action := object(item); action != nil {
 					rename(action, "resultDescription", "actionResult")
+					canonicalV2ActionType(action)
+					for _, p := range array(action["actionParameters"]) {
+						// VDA 3 folds FLOAT into NUMBER.
+						if param := object(p); param != nil && param["valueDataType"] == "FLOAT" {
+							param["valueDataType"] = string(ValueDataTypeNumber)
+						}
+					}
 					if _, ok := action["pauseAllowed"]; !ok {
 						action["pauseAllowed"] = false
 					}
@@ -340,12 +422,15 @@ func (a *V2WireAdapter) Encode(id Identity, version string, topic Topic, canonic
 	}
 	body["version"] = a.opts.HeaderVersionPrefix + version
 	body["manufacturer"], body["serialNumber"] = id.Manufacturer, id.SerialNumber
-	if err := fromCanonicalV2(version, topic, body); err != nil {
+	if err := fromCanonicalV2(version, version == "2.0.0" && a.opts.OriginalV200Schema, topic, body); err != nil {
 		return WireMessage{}, err
 	}
 	payload, err := json.Marshal(body)
 	if err != nil {
 		return WireMessage{}, err
+	}
+	if topic == TopicInstantActions {
+		a.rememberInstantActions(id, array(body["actions"]))
 	}
 	wireName := a.wireTopicName(topic)
 	parts := append(a.leadingLevels(), id.Manufacturer, id.SerialNumber, wireName)
@@ -359,14 +444,18 @@ func (a *V2WireAdapter) wireTopicName(topic Topic) string {
 	return string(topic)
 }
 
-func fromCanonicalV2(version string, topic Topic, body map[string]any) error {
+// fromCanonicalV2 follows the corrected VDA 2 schemas; original200 selects the
+// schemas first published with 2.0.0 (see V2WireOptions.OriginalV200Schema).
+func fromCanonicalV2(version string, original200 bool, topic Topic, body map[string]any) error {
 	switch topic {
 	case TopicOrder:
+		delete(body, "orderDescription")
 		nodes := array(body["nodes"])
 		for _, item := range nodes {
 			if node := object(item); node != nil {
 				rename(node, "nodeDescriptor", "nodeDescription")
-				v2Actions(array(node["actions"]), version, false)
+				v2NodePosition(object(node["nodePosition"]), original200)
+				v2Actions(array(node["actions"]), original200, false)
 			}
 		}
 		for i, item := range array(body["edges"]) {
@@ -379,22 +468,82 @@ func fromCanonicalV2(version string, topic Topic, body map[string]any) error {
 			rename(edge, "maximumMobileRobotHeight", "maxHeight")
 			rename(edge, "minimumLoadHandlingDeviceHeight", "minHeight")
 			rename(edge, "maximumRotationSpeed", "maxRotationSpeed")
-			delete(edge, "corridor")
-			delete(edge, "orientationType")
 			delete(edge, "reachOrientationBeforeEntering")
+			if err := v2EdgeGeometry(edge, version, original200); err != nil {
+				return fmt.Errorf("vda5050: edge %v: %w", edge["edgeId"], err)
+			}
 			if i < len(nodes)-1 {
 				edge["startNodeId"] = object(nodes[i])["nodeId"]
 				edge["endNodeId"] = object(nodes[i+1])["nodeId"]
 			}
-			v2Actions(array(edge["actions"]), version, false)
+			v2Actions(array(edge["actions"]), original200, false)
 		}
 	case TopicInstantActions:
-		v2Actions(array(body["actions"]), version, true)
+		v2Actions(array(body["actions"]), original200, true)
 	}
 	return nil
 }
 
-func v2Actions(items []any, version string, instant bool) {
+// v2NodePosition converts the VDA 3 deviation ellipse to the VDA 2 radius.
+// The smaller semi-axis keeps the vehicle inside the requested ellipse.
+func v2NodePosition(position map[string]any, original200 bool) {
+	if position == nil {
+		return
+	}
+	key := "allowedDeviationXY"
+	if original200 {
+		key = "allowedDeviationXy"
+	}
+	if ellipse := object(position["allowedDeviationXY"]); ellipse != nil {
+		delete(position, "allowedDeviationXY")
+		a, aok := ellipse["a"].(float64)
+		b, bok := ellipse["b"].(float64)
+		switch {
+		case aok && bok:
+			position[key] = math.Min(a, b)
+		case aok:
+			position[key] = a
+		case bok:
+			position[key] = b
+		}
+		return
+	}
+	rename(position, "allowedDeviationXY", key)
+}
+
+// v2EdgeGeometry keeps the edge constraints a VDA 2 version can express and
+// rejects those it cannot, rather than silently loosening them.
+func v2EdgeGeometry(edge map[string]any, version string, original200 bool) error {
+	if original200 {
+		// The original 2.0.0 schema interprets orientation tangentially only.
+		if edge["orientationType"] == string(OrientationTypeGlobal) && edge["orientation"] != nil {
+			return errors.New("GLOBAL orientation is unavailable in the original VDA 2.0.0 schema")
+		}
+		delete(edge, "orientationType")
+	}
+	if version == "2.0.0" {
+		// 2.0.0 has no corridor; without one the vehicle keeps strictly to
+		// its path, which is the tighter constraint.
+		delete(edge, "corridor")
+		return nil
+	}
+	corridor := object(edge["corridor"])
+	if corridor == nil {
+		return nil
+	}
+	if released, _ := corridor["releaseRequired"].(bool); released {
+		return errors.New("corridor release is unavailable before VDA 3.0.0")
+	}
+	delete(corridor, "releaseRequired")
+	delete(corridor, "releaseLossBehavior")
+	rename(corridor, "corridorReferencePoint", "corridorRefPoint")
+	if corridor["corridorRefPoint"] == "KINEMATIC_CENTER" {
+		corridor["corridorRefPoint"] = "KINEMATICCENTER"
+	}
+	return nil
+}
+
+func v2Actions(items []any, original200, instant bool) {
 	for _, item := range items {
 		action := object(item)
 		if action == nil {
@@ -404,10 +553,21 @@ func v2Actions(items []any, version string, instant bool) {
 		if action["actionType"] == ActionInitializePosition {
 			action["actionType"] = "initPosition"
 		}
-		if instant && version == "2.0.0" {
+		// SINGLE is VDA 3 only; HARD is the stricter VDA 2 equivalent.
+		if action["blockingType"] == string(BlockingTypeSingle) {
+			action["blockingType"] = string(BlockingTypeHard)
+		}
+		if instant && original200 {
 			rename(action, "actionType", "actionName")
 		}
 		delete(action, "retriable")
+	}
+}
+
+// canonicalV2ActionType reverses the predefined action renamed in VDA 3.
+func canonicalV2ActionType(action map[string]any) {
+	if action["actionType"] == "initPosition" {
+		action["actionType"] = ActionInitializePosition
 	}
 }
 

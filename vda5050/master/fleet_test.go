@@ -142,6 +142,51 @@ func TestV2AdapterRunsBehindCanonicalFleet(t *testing.T) {
 	}
 }
 
+// A VDA 2 vehicle reports cancelOrder in actionStates. The backend waits for it
+// in instantActionStates, so a cancellation would otherwise never complete.
+func TestV2CancelOrderIsReportedAsInstantAction(t *testing.T) {
+	b := newFakeBroker()
+	f := NewFleet(b, Options{Adapters: vda5050.DefaultWireAdapters("")})
+	ctx := context.Background()
+	id := vda5050.Identity{Manufacturer: "KIT", SerialNumber: "7"}
+	if _, err := f.RegisterProtocol(ctx, id, "vda5050-v2", "2.1.0"); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.SendInstantActions(ctx, id, vda5050.CancelOrder("o1")); err != nil {
+		t.Fatal(err)
+	}
+	sent := b.sent()
+	if len(sent) != 1 || sent[0].Topic != "uagv/v2/KIT/7/instantActions" {
+		t.Fatalf("unexpected VDA 2 publish: %+v", sent)
+	}
+	var wire struct {
+		Actions []struct {
+			ActionID   string `json:"actionId"`
+			ActionType string `json:"actionType"`
+		} `json:"actions"`
+	}
+	if err := json.Unmarshal(sent[0].Payload, &wire); err != nil {
+		t.Fatal(err)
+	}
+	if len(wire.Actions) != 1 || wire.Actions[0].ActionType != vda5050.ActionCancelOrder {
+		t.Fatalf("unexpected instant actions: %s", sent[0].Payload)
+	}
+	cancelID := wire.Actions[0].ActionID
+
+	b.deliver("uagv/v2/KIT/7/state", []byte(`{"headerId":1,"timestamp":"2026-09-16T00:00:00Z","version":"2.1.0","manufacturer":"KIT","serialNumber":"7","orderId":"o1","orderUpdateId":0,"lastNodeId":"n1","lastNodeSequenceId":0,"nodeStates":[],"edgeStates":[],"driving":false,"operatingMode":"AUTOMATIC","errors":[],"batteryState":{"batteryCharge":75,"charging":false},"safetyState":{"eStop":"NONE","fieldViolation":false},"actionStates":[{"actionId":"`+cancelID+`","actionType":"cancelOrder","actionStatus":"FINISHED"}]}`))
+	st := f.Vehicle(id).State()
+	if st == nil || len(st.InstantActionStates) != 1 || st.InstantActionStates[0].ActionID != cancelID ||
+		st.InstantActionStates[0].ActionStatus != vda5050.ActionStatusFinished {
+		t.Fatalf("cancelOrder not reported as an instant action: %+v", st)
+	}
+	if len(st.ActionStates) != 0 {
+		t.Fatalf("cancelOrder left in order action states: %+v", st.ActionStates)
+	}
+}
+
 // ---------------------------------------------------------------------------
 
 var testID = vda5050.Identity{Manufacturer: "KIT", SerialNumber: "0001"}
