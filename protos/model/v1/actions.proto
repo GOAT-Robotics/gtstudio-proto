@@ -15,6 +15,12 @@ message ActionRequest {
     string parent_id = 6;
     int64 retry_count = 7;
     int64 seq_num = 8;
+    // High availability fencing. ha_term is the Raft term of the HerdIQ leader
+    // that issued this request for raft group ha_group (the world slug). Agents
+    // reject a request whose ha_term is lower than the highest term already
+    // seen for the same ha_group. ha_term == 0 means not fenced.
+    uint64 ha_term = 9;
+    string ha_group = 10;
 }
       
 message ActionResponse {

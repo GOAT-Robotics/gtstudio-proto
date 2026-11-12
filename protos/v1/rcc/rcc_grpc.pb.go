@@ -37,6 +37,7 @@ const (
 	Agent_ReceiveRosMessages_FullMethodName           = "/v1.rcc.Agent/ReceiveRosMessages"
 	Agent_GetRtcSignal_FullMethodName                 = "/v1.rcc.Agent/GetRtcSignal"
 	Agent_SendSignalData_FullMethodName               = "/v1.rcc.Agent/SendSignalData"
+	Agent_WatchCluster_FullMethodName                 = "/v1.rcc.Agent/WatchCluster"
 )
 
 // AgentClient is the client API for Agent service.
@@ -97,6 +98,10 @@ type AgentClient interface {
 	GetRtcSignal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[GetRtcSignalResponse, GetRtcSignalRequest], error)
 	// To transfer the signaling data between RCC server and agent
 	SendSignalData(ctx context.Context, in *SignalDataRequest, opts ...grpc.CallOption) (*SignalDataResponse, error)
+	// WatchCluster streams the cluster membership to the agent: the current
+	// ClusterState immediately, then again on every change. A single-server
+	// deployment returns codes.Unimplemented.
+	WatchCluster(ctx context.Context, in *WatchClusterRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ClusterState], error)
 }
 
 type agentClient struct {
@@ -319,6 +324,25 @@ func (c *agentClient) SendSignalData(ctx context.Context, in *SignalDataRequest,
 	return out, nil
 }
 
+func (c *agentClient) WatchCluster(ctx context.Context, in *WatchClusterRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ClusterState], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[8], Agent_WatchCluster_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[WatchClusterRequest, ClusterState]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Agent_WatchClusterClient = grpc.ServerStreamingClient[ClusterState]
+
 // AgentServer is the server API for Agent service.
 // All implementations must embed UnimplementedAgentServer
 // for forward compatibility.
@@ -377,6 +401,10 @@ type AgentServer interface {
 	GetRtcSignal(grpc.BidiStreamingServer[GetRtcSignalResponse, GetRtcSignalRequest]) error
 	// To transfer the signaling data between RCC server and agent
 	SendSignalData(context.Context, *SignalDataRequest) (*SignalDataResponse, error)
+	// WatchCluster streams the cluster membership to the agent: the current
+	// ClusterState immediately, then again on every change. A single-server
+	// deployment returns codes.Unimplemented.
+	WatchCluster(*WatchClusterRequest, grpc.ServerStreamingServer[ClusterState]) error
 	mustEmbedUnimplementedAgentServer()
 }
 
@@ -437,6 +465,9 @@ func (UnimplementedAgentServer) GetRtcSignal(grpc.BidiStreamingServer[GetRtcSign
 }
 func (UnimplementedAgentServer) SendSignalData(context.Context, *SignalDataRequest) (*SignalDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendSignalData not implemented")
+}
+func (UnimplementedAgentServer) WatchCluster(*WatchClusterRequest, grpc.ServerStreamingServer[ClusterState]) error {
+	return status.Errorf(codes.Unimplemented, "method WatchCluster not implemented")
 }
 func (UnimplementedAgentServer) mustEmbedUnimplementedAgentServer() {}
 func (UnimplementedAgentServer) testEmbeddedByValue()               {}
@@ -689,6 +720,17 @@ func _Agent_SendSignalData_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Agent_WatchCluster_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchClusterRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AgentServer).WatchCluster(m, &grpc.GenericServerStream[WatchClusterRequest, ClusterState]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Agent_WatchClusterServer = grpc.ServerStreamingServer[ClusterState]
+
 // Agent_ServiceDesc is the grpc.ServiceDesc for Agent service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -778,6 +820,11 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _Agent_GetRtcSignal_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "WatchCluster",
+			Handler:       _Agent_WatchCluster_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "protos/rcc/v1/rcc.proto",

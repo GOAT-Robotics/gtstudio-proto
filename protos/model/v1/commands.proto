@@ -13,6 +13,9 @@ message CommandRequest {
   bool compressed = 3;
   string data = 4;
   google.protobuf.Timestamp scrubber_time = 5;
+  // High availability fencing, same semantics as ActionRequest.ha_term/ha_group.
+  uint64 ha_term = 6;
+  string ha_group = 7;
 }
 
 message CommandResponse {

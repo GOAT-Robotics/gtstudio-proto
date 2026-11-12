@@ -89,6 +89,10 @@ message CommandStreamRequest {
     string parent_id = 11;
     int64 retry_count = 12;
     int64 seq_num = 13;
+    // High availability: Raft term and group (world slug) of the HerdIQ leader.
+    // The backend copies these onto the request it relays to the agent.
+    uint64 ha_term = 14;
+    string ha_group = 15;
 }
 
 message CommandStreamResponse {
@@ -105,6 +109,10 @@ message CommandStreamResponse {
     string parent_id = 11;
     int64 retry_count = 12;
     int64 seq_num = 13;
+    // High availability: Raft term and group (world slug) of the HerdIQ leader.
+    // The backend copies these onto the request it relays to the agent.
+    uint64 ha_term = 14;
+    string ha_group = 15;
 }
 
 // Herd Service 

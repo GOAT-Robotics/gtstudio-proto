@@ -103,6 +103,11 @@ the server. */
   /*To transfer the signaling data between RCC server and agent*/
   rpc SendSignalData(SignalDataRequest) returns (SignalDataResponse) {}
 
+  /* WatchCluster streams the cluster membership to the agent: the current
+    ClusterState immediately, then again on every change. A single-server
+    deployment returns codes.Unimplemented. */
+  rpc WatchCluster(WatchClusterRequest) returns (stream ClusterState) {}
+
   /*
     StreamRobotTelemetry sends a single RobotTelemetry message from the agent
     and returns an acknowledgement.
@@ -252,4 +257,23 @@ message SendActionResponseRequest{
 message GetActionRequestStreamResponse{
   model.ActionRequest request = 1;
   string action = 2;
+}
+
+message WatchClusterRequest {
+  uint64 known_epoch = 1;  // highest membership epoch the agent holds, 0 if none
+}
+
+message ClusterMember {
+  string node_id = 1;  // stable node name, e.g. "server1"
+  string address = 2;  // host:port the agent dials, e.g. "10.0.15.11:50051"
+  bool voter = 3;      // false for non-voting learners
+}
+
+message ClusterState {
+  string cluster_id = 1;
+  uint64 epoch = 2;  // strictly increases on every membership change
+  repeated ClusterMember members = 3;
+  string node_id = 4;  // node that sent this message
+  bytes signature = 5;  // ed25519 by the cluster provisioning key over the canonical string
+  string sig_alg = 6;   // "ed25519"
 }
