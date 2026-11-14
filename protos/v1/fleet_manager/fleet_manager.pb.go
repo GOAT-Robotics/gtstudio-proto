@@ -1338,10 +1338,16 @@ func (x *HealthCheckRequest) GetMessage() string {
 }
 
 type HealthCheckResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SlugName      string                 `protobuf:"bytes,1,opt,name=slug_name,json=slugName,proto3" json:"slug_name,omitempty"`
-	Status        bool                   `protobuf:"varint,5,opt,name=status,proto3" json:"status,omitempty"`
-	Message       string                 `protobuf:"bytes,6,opt,name=message,proto3" json:"message,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	SlugName string                 `protobuf:"bytes,1,opt,name=slug_name,json=slugName,proto3" json:"slug_name,omitempty"`
+	Status   bool                   `protobuf:"varint,5,opt,name=status,proto3" json:"status,omitempty"`
+	Message  string                 `protobuf:"bytes,6,opt,name=message,proto3" json:"message,omitempty"`
+	// HA: true when the backend runs in cluster mode (an old backend never
+	// sets it, so HerdIQ in HA mode stays passive behind it).
+	HaCluster bool `protobuf:"varint,7,opt,name=ha_cluster,json=haCluster,proto3" json:"ha_cluster,omitempty"`
+	// HA: node holding the cluster primary role; HerdIQ moves its raft
+	// leadership there. Empty while unknown.
+	PrimaryNodeId string `protobuf:"bytes,8,opt,name=primary_node_id,json=primaryNodeId,proto3" json:"primary_node_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1393,6 +1399,20 @@ func (x *HealthCheckResponse) GetStatus() bool {
 func (x *HealthCheckResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
+	}
+	return ""
+}
+
+func (x *HealthCheckResponse) GetHaCluster() bool {
+	if x != nil {
+		return x.HaCluster
+	}
+	return false
+}
+
+func (x *HealthCheckResponse) GetPrimaryNodeId() string {
+	if x != nil {
+		return x.PrimaryNodeId
 	}
 	return ""
 }
@@ -1721,11 +1741,14 @@ const file_protos_fleet_manager_v1_fleet_manager_proto_rawDesc = "" +
 	"\x12HealthCheckRequest\x12\x1b\n" +
 	"\tslug_name\x18\x01 \x01(\tR\bslugName\x12\x16\n" +
 	"\x06status\x18\x05 \x01(\bR\x06status\x12\x18\n" +
-	"\amessage\x18\x06 \x01(\tR\amessage\"d\n" +
+	"\amessage\x18\x06 \x01(\tR\amessage\"\xab\x01\n" +
 	"\x13HealthCheckResponse\x12\x1b\n" +
 	"\tslug_name\x18\x01 \x01(\tR\bslugName\x12\x16\n" +
 	"\x06status\x18\x05 \x01(\bR\x06status\x12\x18\n" +
-	"\amessage\x18\x06 \x01(\tR\amessage\"\x91\x02\n" +
+	"\amessage\x18\x06 \x01(\tR\amessage\x12\x1d\n" +
+	"\n" +
+	"ha_cluster\x18\a \x01(\bR\thaCluster\x12&\n" +
+	"\x0fprimary_node_id\x18\b \x01(\tR\rprimaryNodeId\"\x91\x02\n" +
 	"\x13DockerTelemetryData\x12\x10\n" +
 	"\x03cpu\x18\x01 \x01(\x01R\x03cpu\x12\x16\n" +
 	"\x06memory\x18\x02 \x01(\x01R\x06memory\x12\x12\n" +

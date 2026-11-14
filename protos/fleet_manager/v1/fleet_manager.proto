@@ -208,6 +208,12 @@ message HealthCheckResponse {
     string slug_name = 1;
     bool status = 5;
     string message = 6;
+    // HA: true when the backend runs in cluster mode (an old backend never
+    // sets it, so HerdIQ in HA mode stays passive behind it).
+    bool ha_cluster = 7;
+    // HA: node holding the cluster primary role; HerdIQ moves its raft
+    // leadership there. Empty while unknown.
+    string primary_node_id = 8;
 }
 
 // Docker stats telemetry stream
