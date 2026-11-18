@@ -103,6 +103,12 @@ the server. */
   /*To transfer the signaling data between RCC server and agent*/
   rpc SendSignalData(SignalDataRequest) returns (SignalDataResponse) {}
 
+  /* Terminal carries ONE interactive shell session (web terminal). The agent
+  opens it after it receives a "terminal_open" command on the command stream;
+  the first frame MUST be `open` with the session_id from that command.
+  Required metadata: organization, device_id, token. */
+  rpc Terminal(stream TerminalFrame) returns (stream TerminalFrame) {}
+
   /*
     StreamRobotTelemetry sends a single RobotTelemetry message from the agent
     and returns an acknowledgement.
@@ -114,6 +120,7 @@ message AuthRequest {
   string machine_id = 2;
   string agent_version = 3;
   string ros_version = 4;
+  repeated string features = 5; // optional features this agent supports, e.g. ["terminal"]
 }
 
 message AuthResponse {
@@ -252,3 +259,35 @@ message GetActionRequestStreamResponse{
   model.ActionRequest request = 1;
   string action = 2;
 }
+
+// ---------------------------------------------------------------------------
+// Web terminal
+// ---------------------------------------------------------------------------
+
+message TerminalFrame {
+  string session_id = 1;
+  oneof kind {
+    TerminalOpen open = 2;         // agent -> server, first frame only
+    bytes data = 3;                // server -> agent: keystrokes; agent -> server: output
+    TerminalResize resize = 4;     // server -> agent
+    TerminalClose close = 5;       // both ways
+    TerminalExit exit = 6;         // agent -> server, the shell exited
+    TerminalAttached attached = 7; // server -> agent, session accepted
+  }
+}
+
+message TerminalOpen {
+  uint32 cols = 1; // terminal width in characters
+  uint32 rows = 2; // terminal height in lines
+}
+
+message TerminalResize {
+  uint32 cols = 1;
+  uint32 rows = 2;
+}
+
+message TerminalClose { string reason = 1; }
+
+message TerminalExit { int32 code = 1; }
+
+message TerminalAttached {}
