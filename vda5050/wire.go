@@ -351,6 +351,17 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 	case TopicFactsheet:
 		rename(body, "agvGeometry", "mobileRobotGeometry")
 		rename(body, "vehicleConfig", "mobileRobotConfiguration")
+		// Some vehicles (iRayple) wrap these sections in a same-named object.
+		unwrap(body, "protocolFeatures")
+		unwrap(body, "protocolLimits")
+		if geometry := object(body["mobileRobotGeometry"]); geometry != nil {
+			for _, item := range array(geometry["envelopes2d"]) {
+				if envelope := object(item); envelope != nil {
+					rename(envelope, "set", "envelope2dId")
+					rename(envelope, "polygonPoints", "vertices")
+				}
+			}
+		}
 		if ts := object(body["typeSpecification"]); ts != nil {
 			rename(ts, "agvKinematic", "mobileRobotKinematics")
 			rename(ts, "agvClass", "mobileRobotClass")
@@ -386,9 +397,14 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 					rename(action, "resultDescription", "actionResult")
 					canonicalV2ActionType(action)
 					for _, p := range array(action["actionParameters"]) {
-						// VDA 3 folds FLOAT into NUMBER.
-						if param := object(p); param != nil && param["valueDataType"] == "FLOAT" {
-							param["valueDataType"] = string(ValueDataTypeNumber)
+						// VDA 3 folds FLOAT into NUMBER; some vehicles (iRayple) write INT.
+						if param := object(p); param != nil {
+							switch param["valueDataType"] {
+							case "FLOAT":
+								param["valueDataType"] = string(ValueDataTypeNumber)
+							case "INT":
+								param["valueDataType"] = string(ValueDataTypeInteger)
+							}
 						}
 					}
 					if _, ok := action["pauseAllowed"]; !ok {
@@ -402,6 +418,18 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 		}
 	}
 	return nil
+}
+
+// unwrap replaces body[key] with its own body[key][key] when that is the only
+// field, e.g. {"protocolFeatures": {"protocolFeatures": {...}}}.
+func unwrap(body map[string]any, key string) {
+	outer := object(body[key])
+	if outer == nil || len(outer) != 1 {
+		return
+	}
+	if inner := object(outer[key]); inner != nil {
+		body[key] = inner
+	}
 }
 
 func (a *V2WireAdapter) Encode(id Identity, version string, topic Topic, canonical any) (WireMessage, error) {

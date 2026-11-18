@@ -266,3 +266,49 @@ func TestV2FactsheetActionsAreCanonical(t *testing.T) {
 		t.Fatalf("FLOAT not mapped: %q", actions[1].ActionParameters[0].ValueDataType)
 	}
 }
+
+// A real iRayple RTA-C100 factsheet: protocolFeatures and protocolLimits are
+// wrapped in a same-named object, and envelopes use VDA 2 field names.
+func TestV2FactsheetNestedSectionsUnwrapped(t *testing.T) {
+	raw, err := os.ReadFile("testdata/irayple-factsheet.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := NewV2WireAdapter(V2WireOptions{VersionLevel: "v2.0.0"}).Decode("uagv/v2.0.0/IRAYPLE/ED05452AAK00001/factsheet", raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fs Factsheet
+	if err := json.Unmarshal(decoded.Payload, &fs); err != nil {
+		t.Fatal(err)
+	}
+	actions := map[string]MobileRobotAction{}
+	for _, a := range fs.ProtocolFeatures.MobileRobotActions {
+		actions[string(a.ActionType)] = a
+	}
+	if len(actions) != 14 {
+		t.Fatalf("got %d actions, want 14: %v", len(actions), actions)
+	}
+	pick, ok := actions["pick"]
+	if !ok || len(pick.ActionParameters) != 3 {
+		t.Fatalf("pick missing or without its 3 parameters: %+v", pick)
+	}
+	if _, ok := actions[string(ActionInitializePosition)]; !ok {
+		t.Fatal("initPosition not mapped")
+	}
+	for _, a := range actions {
+		for _, p := range a.ActionParameters {
+			switch p.ValueDataType {
+			case ValueDataTypeNumber, ValueDataTypeInteger, ValueDataTypeString:
+			default:
+				t.Fatalf("%s.%s: valueDataType %q not canonical", a.ActionType, p.Key, p.ValueDataType)
+			}
+		}
+	}
+	if fs.ProtocolLimits.MaximumStringLengths.MaximumIDLength == nil {
+		t.Fatalf("protocolLimits lost: %+v", fs.ProtocolLimits)
+	}
+	if v := fs.MobileRobotGeometry.Envelopes2d[0].Vertices; len(v) < 3 {
+		t.Fatalf("envelope vertices lost: %+v", v)
+	}
+}
