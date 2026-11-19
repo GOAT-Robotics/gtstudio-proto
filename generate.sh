@@ -2,6 +2,7 @@
 
 RCC_PROTO="./protos/rcc/v1/rcc.proto"
 FLEET_MANAGER_PROTO="./protos/fleet_manager/v1/fleet_manager.proto"
+SHELL_PROTO="./protos/shell/v1/shell.proto"
 
 # Remove existing Go files
 rm -rf ./protos/v1
@@ -20,6 +21,11 @@ echo "Processing $RCC_PROTO file.."
 # Generates Go files for GT Studio - Fleet Manager from the fleet_manager.proto file
 protoc --go_out=. --go-grpc_out=. $FLEET_MANAGER_PROTO
 echo "Processing $FLEET_MANAGER_PROTO file.."
+
+# Generates Go files for the GT Studio shell (browser <-> backend, gRPC-Web / Connect).
+# Needs protoc-gen-connect-go: go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v1.19.1
+protoc --go_out=. --connect-go_out=. $SHELL_PROTO
+echo "Processing $SHELL_PROTO file.."
 
 # Loops over all the model files and creates both Go and Python files
 for f in ./protos/model/v1/*.proto
