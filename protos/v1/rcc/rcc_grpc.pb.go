@@ -37,7 +37,7 @@ const (
 	Agent_ReceiveRosMessages_FullMethodName           = "/v1.rcc.Agent/ReceiveRosMessages"
 	Agent_GetRtcSignal_FullMethodName                 = "/v1.rcc.Agent/GetRtcSignal"
 	Agent_SendSignalData_FullMethodName               = "/v1.rcc.Agent/SendSignalData"
-	Agent_Terminal_FullMethodName                     = "/v1.rcc.Agent/Terminal"
+	Agent_Shell_FullMethodName                        = "/v1.rcc.Agent/Shell"
 )
 
 // AgentClient is the client API for Agent service.
@@ -98,11 +98,11 @@ type AgentClient interface {
 	GetRtcSignal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[GetRtcSignalResponse, GetRtcSignalRequest], error)
 	// To transfer the signaling data between RCC server and agent
 	SendSignalData(ctx context.Context, in *SignalDataRequest, opts ...grpc.CallOption) (*SignalDataResponse, error)
-	// Terminal carries ONE interactive shell session (web terminal). The agent
-	// opens it after it receives a "terminal_open" command on the command stream;
+	// Shell carries ONE interactive shell session (GT Studio shell). The agent
+	// opens it after it receives a "shell_open" command on the command stream;
 	// the first frame MUST be `open` with the session_id from that command.
 	// Required metadata: organization, device_id, token.
-	Terminal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TerminalFrame, TerminalFrame], error)
+	Shell(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ShellFrame, ShellFrame], error)
 }
 
 type agentClient struct {
@@ -325,18 +325,18 @@ func (c *agentClient) SendSignalData(ctx context.Context, in *SignalDataRequest,
 	return out, nil
 }
 
-func (c *agentClient) Terminal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TerminalFrame, TerminalFrame], error) {
+func (c *agentClient) Shell(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ShellFrame, ShellFrame], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[8], Agent_Terminal_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[8], Agent_Shell_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[TerminalFrame, TerminalFrame]{ClientStream: stream}
+	x := &grpc.GenericClientStream[ShellFrame, ShellFrame]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Agent_TerminalClient = grpc.BidiStreamingClient[TerminalFrame, TerminalFrame]
+type Agent_ShellClient = grpc.BidiStreamingClient[ShellFrame, ShellFrame]
 
 // AgentServer is the server API for Agent service.
 // All implementations must embed UnimplementedAgentServer
@@ -396,11 +396,11 @@ type AgentServer interface {
 	GetRtcSignal(grpc.BidiStreamingServer[GetRtcSignalResponse, GetRtcSignalRequest]) error
 	// To transfer the signaling data between RCC server and agent
 	SendSignalData(context.Context, *SignalDataRequest) (*SignalDataResponse, error)
-	// Terminal carries ONE interactive shell session (web terminal). The agent
-	// opens it after it receives a "terminal_open" command on the command stream;
+	// Shell carries ONE interactive shell session (GT Studio shell). The agent
+	// opens it after it receives a "shell_open" command on the command stream;
 	// the first frame MUST be `open` with the session_id from that command.
 	// Required metadata: organization, device_id, token.
-	Terminal(grpc.BidiStreamingServer[TerminalFrame, TerminalFrame]) error
+	Shell(grpc.BidiStreamingServer[ShellFrame, ShellFrame]) error
 	mustEmbedUnimplementedAgentServer()
 }
 
@@ -462,8 +462,8 @@ func (UnimplementedAgentServer) GetRtcSignal(grpc.BidiStreamingServer[GetRtcSign
 func (UnimplementedAgentServer) SendSignalData(context.Context, *SignalDataRequest) (*SignalDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendSignalData not implemented")
 }
-func (UnimplementedAgentServer) Terminal(grpc.BidiStreamingServer[TerminalFrame, TerminalFrame]) error {
-	return status.Errorf(codes.Unimplemented, "method Terminal not implemented")
+func (UnimplementedAgentServer) Shell(grpc.BidiStreamingServer[ShellFrame, ShellFrame]) error {
+	return status.Errorf(codes.Unimplemented, "method Shell not implemented")
 }
 func (UnimplementedAgentServer) mustEmbedUnimplementedAgentServer() {}
 func (UnimplementedAgentServer) testEmbeddedByValue()               {}
@@ -716,12 +716,12 @@ func _Agent_SendSignalData_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_Terminal_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(AgentServer).Terminal(&grpc.GenericServerStream[TerminalFrame, TerminalFrame]{ServerStream: stream})
+func _Agent_Shell_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AgentServer).Shell(&grpc.GenericServerStream[ShellFrame, ShellFrame]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Agent_TerminalServer = grpc.BidiStreamingServer[TerminalFrame, TerminalFrame]
+type Agent_ShellServer = grpc.BidiStreamingServer[ShellFrame, ShellFrame]
 
 // Agent_ServiceDesc is the grpc.ServiceDesc for Agent service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -814,8 +814,8 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "Terminal",
-			Handler:       _Agent_Terminal_Handler,
+			StreamName:    "Shell",
+			Handler:       _Agent_Shell_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

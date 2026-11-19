@@ -21,6 +21,12 @@ echo "Processing $RCC_PROTO file.."
 protoc --go_out=. --go-grpc_out=. $FLEET_MANAGER_PROTO
 echo "Processing $FLEET_MANAGER_PROTO file.."
 
+# Generates Go files for the GT Studio shell (browser <-> backend, gRPC-Web / Connect).
+# Needs protoc-gen-connect-go: go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v1.19.1
+SHELL_PROTO="./protos/shell/v1/shell.proto"
+protoc --go_out=. --connect-go_out=. $SHELL_PROTO
+echo "Processing $SHELL_PROTO file.."
+
 # Loops over all the model files and creates both Go and Python files
 for f in ./protos/model/v1/*.proto
 do
