@@ -3,8 +3,9 @@ module github.com/GOAT-Robotics/gtstudio-proto
 go 1.24.4
 
 require (
+	connectrpc.com/connect v1.19.1
 	google.golang.org/grpc v1.73.0
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.9
 )
 
 require (

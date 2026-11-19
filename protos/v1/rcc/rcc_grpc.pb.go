@@ -38,6 +38,7 @@ const (
 	Agent_GetRtcSignal_FullMethodName                 = "/v1.rcc.Agent/GetRtcSignal"
 	Agent_SendSignalData_FullMethodName               = "/v1.rcc.Agent/SendSignalData"
 	Agent_WatchCluster_FullMethodName                 = "/v1.rcc.Agent/WatchCluster"
+	Agent_Shell_FullMethodName                        = "/v1.rcc.Agent/Shell"
 )
 
 // AgentClient is the client API for Agent service.
@@ -102,6 +103,11 @@ type AgentClient interface {
 	// ClusterState immediately, then again on every change. A single-server
 	// deployment returns codes.Unimplemented.
 	WatchCluster(ctx context.Context, in *WatchClusterRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ClusterState], error)
+	// Shell carries ONE interactive shell session (GT Studio shell). The agent
+	// opens it after it receives a "shell_open" command on the command stream;
+	// the first frame MUST be `open` with the session_id from that command.
+	// Required metadata: organization, device_id, token.
+	Shell(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ShellFrame, ShellFrame], error)
 }
 
 type agentClient struct {
@@ -343,6 +349,19 @@ func (c *agentClient) WatchCluster(ctx context.Context, in *WatchClusterRequest,
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Agent_WatchClusterClient = grpc.ServerStreamingClient[ClusterState]
 
+func (c *agentClient) Shell(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ShellFrame, ShellFrame], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[9], Agent_Shell_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ShellFrame, ShellFrame]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Agent_ShellClient = grpc.BidiStreamingClient[ShellFrame, ShellFrame]
+
 // AgentServer is the server API for Agent service.
 // All implementations must embed UnimplementedAgentServer
 // for forward compatibility.
@@ -405,6 +424,11 @@ type AgentServer interface {
 	// ClusterState immediately, then again on every change. A single-server
 	// deployment returns codes.Unimplemented.
 	WatchCluster(*WatchClusterRequest, grpc.ServerStreamingServer[ClusterState]) error
+	// Shell carries ONE interactive shell session (GT Studio shell). The agent
+	// opens it after it receives a "shell_open" command on the command stream;
+	// the first frame MUST be `open` with the session_id from that command.
+	// Required metadata: organization, device_id, token.
+	Shell(grpc.BidiStreamingServer[ShellFrame, ShellFrame]) error
 	mustEmbedUnimplementedAgentServer()
 }
 
@@ -468,6 +492,9 @@ func (UnimplementedAgentServer) SendSignalData(context.Context, *SignalDataReque
 }
 func (UnimplementedAgentServer) WatchCluster(*WatchClusterRequest, grpc.ServerStreamingServer[ClusterState]) error {
 	return status.Errorf(codes.Unimplemented, "method WatchCluster not implemented")
+}
+func (UnimplementedAgentServer) Shell(grpc.BidiStreamingServer[ShellFrame, ShellFrame]) error {
+	return status.Errorf(codes.Unimplemented, "method Shell not implemented")
 }
 func (UnimplementedAgentServer) mustEmbedUnimplementedAgentServer() {}
 func (UnimplementedAgentServer) testEmbeddedByValue()               {}
@@ -731,6 +758,13 @@ func _Agent_WatchCluster_Handler(srv interface{}, stream grpc.ServerStream) erro
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Agent_WatchClusterServer = grpc.ServerStreamingServer[ClusterState]
 
+func _Agent_Shell_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AgentServer).Shell(&grpc.GenericServerStream[ShellFrame, ShellFrame]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Agent_ShellServer = grpc.BidiStreamingServer[ShellFrame, ShellFrame]
+
 // Agent_ServiceDesc is the grpc.ServiceDesc for Agent service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -825,6 +859,12 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "WatchCluster",
 			Handler:       _Agent_WatchCluster_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "Shell",
+			Handler:       _Agent_Shell_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "protos/rcc/v1/rcc.proto",
