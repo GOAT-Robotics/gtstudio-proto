@@ -40,6 +40,7 @@ const (
 	CommandStreamCommands_SETTINGS               CommandStreamCommands = 12
 	CommandStreamCommands_PLATFORM               CommandStreamCommands = 13
 	CommandStreamCommands_UPDATE_STATION         CommandStreamCommands = 14
+	CommandStreamCommands_ACKNOWLEDGE_TASK       CommandStreamCommands = 15 // GT Studio knob: release a robot waiting in a knob_ack task
 )
 
 // Enum value maps for CommandStreamCommands.
@@ -60,6 +61,7 @@ var (
 		12: "SETTINGS",
 		13: "PLATFORM",
 		14: "UPDATE_STATION",
+		15: "ACKNOWLEDGE_TASK",
 	}
 	CommandStreamCommands_value = map[string]int32{
 		"COMMAND_STREAM_UNKNOWN": 0,
@@ -77,6 +79,7 @@ var (
 		"SETTINGS":               12,
 		"PLATFORM":               13,
 		"UPDATE_STATION":         14,
+		"ACKNOWLEDGE_TASK":       15,
 	}
 )
 
@@ -1771,7 +1774,7 @@ const file_protos_fleet_manager_v1_fleet_manager_proto_rawDesc = "" +
 	"\tslug_name\x18\x01 \x01(\tR\bslugName\x129\n" +
 	"\x04data\x18\x02 \x01(\v2%.v1.fleet_manager.DockerTelemetryDataR\x04data\x12\x16\n" +
 	"\x06status\x18\x03 \x01(\bR\x06status\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage*\x87\x02\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage*\x9d\x02\n" +
 	"\x15CommandStreamCommands\x12\x1a\n" +
 	"\x16COMMAND_STREAM_UNKNOWN\x10\x00\x12\x10\n" +
 	"\fFLOW_EXECUTE\x10\x01\x12\x0f\n" +
@@ -1790,7 +1793,8 @@ const file_protos_fleet_manager_v1_fleet_manager_proto_rawDesc = "" +
 	"\x04LANE\x10\v\x12\f\n" +
 	"\bSETTINGS\x10\f\x12\f\n" +
 	"\bPLATFORM\x10\r\x12\x12\n" +
-	"\x0eUPDATE_STATION\x10\x0e*\x9e\x05\n" +
+	"\x0eUPDATE_STATION\x10\x0e\x12\x14\n" +
+	"\x10ACKNOWLEDGE_TASK\x10\x0f*\x9e\x05\n" +
 	"\x14CommandStreamActions\x12\x1a\n" +
 	"\x16COMMAND_ACTION_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vCANCEL_GOAL\x10\x01\x12\r\n" +

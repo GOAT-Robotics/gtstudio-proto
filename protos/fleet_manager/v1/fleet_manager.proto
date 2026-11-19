@@ -37,6 +37,7 @@ enum CommandStreamCommands {
     SETTINGS = 12;
     PLATFORM = 13;
     UPDATE_STATION = 14;
+    ACKNOWLEDGE_TASK = 15; // GT Studio knob: release a robot waiting in a knob_ack task
 }
 
 enum CommandStreamActions {
