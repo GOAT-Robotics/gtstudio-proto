@@ -109,6 +109,21 @@ func (v *Vehicle) StateAge() time.Duration {
 	return time.Since(v.stateAt)
 }
 
+// StateAt reports when the last state message arrived; zero if none has.
+func (v *Vehicle) StateAt() time.Time {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+	return v.stateAt
+}
+
+// FactsheetAt reports when the last factsheet arrived; zero if none has. A
+// factsheetRequest is answered by a factsheet newer than the request.
+func (v *Vehicle) FactsheetAt() time.Time {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+	return v.factsheetAt
+}
+
 // ConnectionState returns the last reported MQTT-level connection state.
 func (v *Vehicle) ConnectionState() vda5050.ConnectionState {
 	v.mu.RLock()

@@ -516,6 +516,52 @@ func TestConnectionStateTransitions(t *testing.T) {
 	}
 }
 
+// iRayple publishes ONLINE once without the retain flag: a fleet started after
+// it must still see the vehicle as ONLINE once live state arrives, but a
+// retained (possibly old) state must not bring it online.
+func TestLiveStateMarksVehicleOnline(t *testing.T) {
+	b := newFakeBroker()
+	var seen []vda5050.ConnectionState
+	var mu sync.Mutex
+	f := NewFleet(b, Options{
+		OnConnection: func(_ *Vehicle, s vda5050.ConnectionState) {
+			mu.Lock()
+			seen = append(seen, s)
+			mu.Unlock()
+		},
+	})
+	ctx := context.Background()
+	_, _ = f.Register(ctx, testID)
+	_ = f.Start(ctx)
+	topic := "vda5050/v3/KIT/0001/state"
+
+	b.mu.Lock()
+	var handlers []transport.Handler
+	for filter, h := range b.subs {
+		if topicMatches(filter, topic) {
+			handlers = append(handlers, h)
+		}
+	}
+	b.mu.Unlock()
+	for _, h := range handlers {
+		h(transport.Message{Topic: topic, Payload: stateJSON(t, vda5050.State{}), Retained: true})
+	}
+	if got := f.Vehicle(testID).ConnectionState(); got != vda5050.ConnectionStateOffline {
+		t.Fatalf("a retained state must not mark the vehicle online, got %s", got)
+	}
+
+	b.deliver(topic, stateJSON(t, vda5050.State{}))
+	b.deliver(topic, stateJSON(t, vda5050.State{}))
+	if got := f.Vehicle(testID).ConnectionState(); got != vda5050.ConnectionStateOnline {
+		t.Fatalf("live state should mark the vehicle ONLINE, got %s", got)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(seen) != 1 || seen[0] != vda5050.ConnectionStateOnline {
+		t.Fatalf("want one ONLINE callback, got %v", seen)
+	}
+}
+
 func TestForeignTrafficIsIgnored(t *testing.T) {
 	// Discovery on a shared broker must not adopt messages from another
 	// system, or a vehicle belonging to someone else joins the fleet.

@@ -329,6 +329,15 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 				rename(info, "infoDescription", "infoDescriptor")
 			}
 		}
+		for _, item := range array(body["errors"]) {
+			if e := object(item); e != nil {
+				if t, ok := e["errorType"].(string); ok {
+					if canonical, known := v2ErrorTypes[t]; known {
+						e["errorType"] = canonical
+					}
+				}
+			}
+		}
 	case TopicVisualization:
 		rename(body, "agvPosition", "mobileRobotPosition")
 		if p := object(body["mobileRobotPosition"]); p != nil {
@@ -418,6 +427,17 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 		}
 	}
 	return nil
+}
+
+// v2ErrorTypes maps the camelCase error types of VDA 2.x (and the vehicles
+// built on it) to their VDA 3 names, so an order rejection is recognised as one.
+// Without this a refused order leaves no nodes behind and reads as finished.
+var v2ErrorTypes = map[string]string{
+	"noRouteError":     ErrNoRouteToTarget,
+	"validationError":  ErrValidationFailure,
+	"orderError":       ErrInvalidOrder,
+	"orderActionError": ErrInvalidOrderAction,
+	"orderUpdateError": ErrOutdatedOrderUpdate,
 }
 
 // unwrap replaces body[key] with its own body[key][key] when that is the only

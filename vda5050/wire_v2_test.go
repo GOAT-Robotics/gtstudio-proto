@@ -312,3 +312,31 @@ func TestV2FactsheetNestedSectionsUnwrapped(t *testing.T) {
 		t.Fatalf("envelope vertices lost: %+v", v)
 	}
 }
+
+// iRayple refusing an order it cannot start (robot 12 cm off its start node).
+func TestV2NoRouteErrorIsOrderRejection(t *testing.T) {
+	raw := `{"headerId":290,"timestamp":"2026-11-19T13:36:45.876Z","version":"v2.0.0","manufacturer":"IRAYPLE",
+		"serialNumber":"ED05452AAK00001","orderId":"f6b66680","orderUpdateId":0,"lastNodeId":"10000003","lastNodeSequenceId":0,
+		"nodeStates":[],"edgeStates":[],"driving":false,"actionStates":[],"operatingMode":"AUTOMATIC","information":[],"loads":[],
+		"batteryState":{"batteryCharge":74,"charging":false},"safetyState":{"eStop":"NONE","fieldViolation":false},
+		"errors":[{"errorDescription":"0x3202_BigTurnDistError:1:4","errorLevel":"WARNING","errorType":"noRouteError",
+			"errorReferences":[{"referenceKey":"orderId","referenceValue":"f6b66680"},{"referenceKey":"errorNo","referenceValue":"0x3202"}]}]}`
+	decoded, err := NewV2WireAdapter(V2WireOptions{VersionLevel: "v2.0.0"}).Decode("uagv/v2.0.0/IRAYPLE/ED05452AAK00001/state", []byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var st State
+	if err := json.Unmarshal(decoded.Payload, &st); err != nil {
+		t.Fatal(err)
+	}
+	rej := RejectionIn(&st)
+	if rej == nil || rej.ErrorType != ErrNoRouteToTarget {
+		t.Fatalf("noRouteError not recognised as an order rejection: %+v", st.Errors)
+	}
+	if id, ok := ErrorReferenceValue(rej, RefOrderID); !ok || id != "f6b66680" {
+		t.Fatalf("rejection lost its order reference: %+v", rej.ErrorReferences)
+	}
+	if rej.ErrorDescription == nil || *rej.ErrorDescription != "0x3202_BigTurnDistError:1:4" {
+		t.Fatal("the vehicle's own description must be kept")
+	}
+}
