@@ -103,6 +103,12 @@ the server. */
   /*To transfer the signaling data between RCC server and agent*/
   rpc SendSignalData(SignalDataRequest) returns (SignalDataResponse) {}
 
+  /* Shell carries ONE interactive shell session (GT Studio shell). The agent
+  opens it after it receives a "shell_open" command on the command stream;
+  the first frame MUST be `open` with the session_id from that command.
+  Required metadata: organization, device_id, token. */
+  rpc Shell(stream ShellFrame) returns (stream ShellFrame) {}
+
   /*
     StreamRobotTelemetry sends a single RobotTelemetry message from the agent
     and returns an acknowledgement.
@@ -114,6 +120,7 @@ message AuthRequest {
   string machine_id = 2;
   string agent_version = 3;
   string ros_version = 4;
+  repeated string features = 5; // optional features this agent supports, e.g. ["shell"]
 }
 
 message AuthResponse {
@@ -125,6 +132,7 @@ message SpecsRequest {
   model.DeviceSpecifications specifications = 1;
   string device_id = 2;
   string hardware_specs = 3;
+  string sensor_tf = 4;
 }
 
 message SpecsResponse {
@@ -252,3 +260,35 @@ message GetActionRequestStreamResponse{
   model.ActionRequest request = 1;
   string action = 2;
 }
+
+// ---------------------------------------------------------------------------
+// Shell
+// ---------------------------------------------------------------------------
+
+message ShellFrame {
+  string session_id = 1;
+  oneof kind {
+    ShellOpen open = 2;         // agent -> server, first frame only
+    bytes data = 3;             // server -> agent: keystrokes; agent -> server: output
+    ShellResize resize = 4;     // server -> agent
+    ShellClose close = 5;       // both ways
+    ShellExit exit = 6;         // agent -> server, the shell exited
+    ShellAttached attached = 7; // server -> agent, session accepted
+  }
+}
+
+message ShellOpen {
+  uint32 cols = 1; // width in characters
+  uint32 rows = 2; // height in lines
+}
+
+message ShellResize {
+  uint32 cols = 1;
+  uint32 rows = 2;
+}
+
+message ShellClose { string reason = 1; }
+
+message ShellExit { int32 code = 1; }
+
+message ShellAttached {}
