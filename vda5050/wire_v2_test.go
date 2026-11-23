@@ -267,14 +267,14 @@ func TestV2FactsheetActionsAreCanonical(t *testing.T) {
 	}
 }
 
-// A real iRayple RTA-C100 factsheet: protocolFeatures and protocolLimits are
+// A real vehicle factsheet: protocolFeatures and protocolLimits are
 // wrapped in a same-named object, and envelopes use VDA 2 field names.
 func TestV2FactsheetNestedSectionsUnwrapped(t *testing.T) {
-	raw, err := os.ReadFile("testdata/irayple-factsheet.json")
+	raw, err := os.ReadFile("testdata/acme-factsheet.json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	decoded, err := NewV2WireAdapter(V2WireOptions{VersionLevel: "v2.0.0"}).Decode("uagv/v2.0.0/IRAYPLE/ED05452AAK00001/factsheet", raw)
+	decoded, err := NewV2WireAdapter(V2WireOptions{VersionLevel: "v2.0.0"}).Decode("uagv/v2.0.0/ACME/ED05452AAK00001/factsheet", raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -313,15 +313,15 @@ func TestV2FactsheetNestedSectionsUnwrapped(t *testing.T) {
 	}
 }
 
-// iRayple refusing an order it cannot start (robot 12 cm off its start node).
+// A vehicle refusing an order it cannot start (robot 12 cm off its start node).
 func TestV2NoRouteErrorIsOrderRejection(t *testing.T) {
-	raw := `{"headerId":290,"timestamp":"2026-11-19T13:36:45.876Z","version":"v2.0.0","manufacturer":"IRAYPLE",
+	raw := `{"headerId":290,"timestamp":"2026-11-19T13:36:45.876Z","version":"v2.0.0","manufacturer":"ACME",
 		"serialNumber":"ED05452AAK00001","orderId":"f6b66680","orderUpdateId":0,"lastNodeId":"10000003","lastNodeSequenceId":0,
 		"nodeStates":[],"edgeStates":[],"driving":false,"actionStates":[],"operatingMode":"AUTOMATIC","information":[],"loads":[],
 		"batteryState":{"batteryCharge":74,"charging":false},"safetyState":{"eStop":"NONE","fieldViolation":false},
 		"errors":[{"errorDescription":"0x3202_BigTurnDistError:1:4","errorLevel":"WARNING","errorType":"noRouteError",
 			"errorReferences":[{"referenceKey":"orderId","referenceValue":"f6b66680"},{"referenceKey":"errorNo","referenceValue":"0x3202"}]}]}`
-	decoded, err := NewV2WireAdapter(V2WireOptions{VersionLevel: "v2.0.0"}).Decode("uagv/v2.0.0/IRAYPLE/ED05452AAK00001/state", []byte(raw))
+	decoded, err := NewV2WireAdapter(V2WireOptions{VersionLevel: "v2.0.0"}).Decode("uagv/v2.0.0/ACME/ED05452AAK00001/state", []byte(raw))
 	if err != nil {
 		t.Fatal(err)
 	}

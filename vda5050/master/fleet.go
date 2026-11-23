@@ -492,7 +492,7 @@ func (f *Fleet) dispatch(id vda5050.Identity, topic vda5050.Topic, m transport.M
 		v.mu.Lock()
 		v.state, v.stateAt = &s, time.Now()
 		// A live state proves the vehicle is connected. Some vehicles
-		// (iRayple) publish ONLINE once without the retain flag, so a fleet
+		// publish ONLINE once without the retain flag, so a fleet
 		// control started after them would otherwise keep them OFFLINE. A
 		// retained state may be old and proves nothing.
 		inferred := !m.Retained && v.conn != vda5050.ConnectionStateOnline

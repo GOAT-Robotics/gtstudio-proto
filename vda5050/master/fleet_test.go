@@ -516,7 +516,7 @@ func TestConnectionStateTransitions(t *testing.T) {
 	}
 }
 
-// iRayple publishes ONLINE once without the retain flag: a fleet started after
+// Some vehicles publish ONLINE once without the retain flag: a fleet started after
 // it must still see the vehicle as ONLINE once live state arrives, but a
 // retained (possibly old) state must not bring it online.
 func TestLiveStateMarksVehicleOnline(t *testing.T) {

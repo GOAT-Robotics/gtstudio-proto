@@ -360,7 +360,7 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 	case TopicFactsheet:
 		rename(body, "agvGeometry", "mobileRobotGeometry")
 		rename(body, "vehicleConfig", "mobileRobotConfiguration")
-		// Some vehicles (iRayple) wrap these sections in a same-named object.
+		// Some vehicles wrap these sections in a same-named object.
 		unwrap(body, "protocolFeatures")
 		unwrap(body, "protocolLimits")
 		if geometry := object(body["mobileRobotGeometry"]); geometry != nil {
@@ -406,7 +406,7 @@ func (a *V2WireAdapter) toCanonical(topic Topic, body map[string]any) error {
 					rename(action, "resultDescription", "actionResult")
 					canonicalV2ActionType(action)
 					for _, p := range array(action["actionParameters"]) {
-						// VDA 3 folds FLOAT into NUMBER; some vehicles (iRayple) write INT.
+						// VDA 3 folds FLOAT into NUMBER; some vehicles write INT.
 						if param := object(p); param != nil {
 							switch param["valueDataType"] {
 							case "FLOAT":
