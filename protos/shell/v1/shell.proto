@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package v1.shell;
+
+option go_package = "github.com/GOAT-Robotics/gtstudio-proto/protos/v1/shell";
+
+// GT Studio shell between the browser and the backend, over gRPC-Web / Connect
+// (HTTPS, same port and session login as the REST API). Access needs the
+// shell:devices permission.
+//
+// Browsers cannot stream a request body, so:
+//   Status  is the shell available for this robot (shows the Shell tab)
+//   Attach  one server stream per page: every shell's output and events
+//   Send    one unary call per batch of keystrokes / control message
+service Shell {
+  rpc Status(StatusRequest) returns (StatusResponse);
+  rpc Attach(AttachRequest) returns (stream PageEvent);
+  rpc Send(SendRequest) returns (SendResponse);
+}
+
+message StatusRequest {
+  string device_id = 1;
+}
+
+message StatusResponse {
+  bool enabled = 1;           // shell.enabled for the organization
+  bool online = 2;            // robot connected
+  bool supported = 3;         // the robot's agent supports the shell
+  string device_name = 4;
+  uint32 max_ttys = 5;        // shells per page
+  bool allow_type_to_all = 6; // typing into several shells at once is allowed
+}
+
+message AttachRequest {
+  string device_id = 1;
+}
+
+message PageEvent {
+  oneof kind {
+    Ready ready = 1;     // always the first event
+    Output output = 2;   // output of one shell
+    Control control = 3; // opened | closed | error | ping
+  }
+}
+
+// page_id identifies this page in every Send call.
+message Ready {
+  string page_id = 1;
+}
+
+message Output {
+  uint32 ch = 1;
+  bytes data = 2;
+}
+
+// op: open | resize | close (browser -> backend),
+//     opened | closed | error | ping (backend -> browser).
+// cols/rows are characters, not pixels.
+message Control {
+  string op = 1;
+  uint32 ch = 2;
+  uint32 cols = 3;
+  uint32 rows = 4;
+  string reason = 5;
+}
+
+message SendRequest {
+  string page_id = 1;
+  oneof kind {
+    Input input = 2;
+    TypeAll type_all = 3;
+    Control control = 4;
+  }
+}
+
+message Input {
+  uint32 ch = 1;
+  bytes data = 2;
+}
+
+message TypeAll {
+  repeated uint32 chs = 1;
+  bytes data = 2;
+}
+
+message SendResponse {}
