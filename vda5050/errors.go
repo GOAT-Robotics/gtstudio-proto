@@ -280,6 +280,44 @@ func RejectionIn(s *State) *Error {
 	return nil
 }
 
+// OrderRejectionIn returns the first error in s that rejects order orderID,
+// or nil. It is for a vehicle already reporting orderID as its order, i.e.
+// one that accepted it: a rejection then can only be of an order update.
+//
+// RejectionIn goes by error type alone, but some of those types are not about
+// orders only -- a validationError (VALIDATION_FAILURE) is reported for any
+// topic. An error is about the order only if its references say so: topic
+// "order", or orderID. One naming another topic (an invalid instantActions or
+// zoneSet message), another order, or only an action is that message's
+// problem and leaves the order running. One with no references cannot be tied
+// to an order the vehicle has already accepted.
+func OrderRejectionIn(s *State, orderID string) *Error {
+	if s == nil {
+		return nil
+	}
+	for i := range s.Errors {
+		if e := &s.Errors[i]; IsOrderRejection(e.ErrorType) && refersToOrder(e, orderID) {
+			return e
+		}
+	}
+	return nil
+}
+
+func refersToOrder(e *Error, orderID string) bool {
+	if id, ok := ErrorReferenceValue(e, RefOrderID); ok && id != orderID {
+		return false
+	}
+	if topic, ok := ErrorReferenceValue(e, RefTopic); ok {
+		return topic == string(TopicOrder)
+	}
+	for _, key := range []string{RefOrderID, RefOrderUpdateID, RefNodeID, RefEdgeID} {
+		if _, ok := ErrorReferenceValue(e, key); ok {
+			return true
+		}
+	}
+	return false
+}
+
 // ErrorReferenceValue looks up one reference on an error.
 func ErrorReferenceValue(e *Error, key string) (string, bool) {
 	if e == nil {
