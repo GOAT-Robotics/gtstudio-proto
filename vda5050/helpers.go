@@ -1,6 +1,12 @@
 package vda5050
 
-import "github.com/google/uuid"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/google/uuid"
+)
 
 // Optional-field constructors.
 //
@@ -145,3 +151,31 @@ func SkipRetry(actionID string) InstantAction {
 
 // Trigger releases a waitForTrigger action the vehicle is blocked on.
 func Trigger() InstantAction { return NewInstantAction(ActionTrigger) }
+
+// LenientBool is a boolean that also accepts the strings "true" and "false".
+// The 3.0.0 specification documents factsheet pauseAllowed/cancelAllowed as
+// booleans while the official JSON schema types them as strings, so vehicles
+// built from either publish a different form. It always marshals as a boolean.
+type LenientBool bool
+
+// UnmarshalJSON accepts true, false, "true" and "false" (any letter case).
+func (b *LenientBool) UnmarshalJSON(data []byte) error {
+	var v bool
+	if err := json.Unmarshal(data, &v); err == nil {
+		*b = LenientBool(v)
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return fmt.Errorf("vda5050: expected a boolean or \"true\"/\"false\", got %s", data)
+	}
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "true":
+		*b = true
+	case "false":
+		*b = false
+	default:
+		return fmt.Errorf("vda5050: expected a boolean or \"true\"/\"false\", got %q", s)
+	}
+	return nil
+}

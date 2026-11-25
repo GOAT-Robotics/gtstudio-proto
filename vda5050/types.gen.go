@@ -1554,9 +1554,9 @@ type MobileRobotAction struct {
 	// Optional.
 	BlockingTypes []BlockingType `json:"blockingTypes,omitempty"`
 	// True: action can be paused via startPause. False: action cannot be paused.
-	PauseAllowed bool `json:"pauseAllowed"`
+	PauseAllowed LenientBool `json:"pauseAllowed"`
 	// True: action can be cancelled via cancelOrder. False: action cannot be cancelled.
-	CancelAllowed bool `json:"cancelAllowed"`
+	CancelAllowed LenientBool `json:"cancelAllowed"`
 }
 
 // ProtocolFeatures is the VDA5050 3.0.0 `protocolFeatures` object.

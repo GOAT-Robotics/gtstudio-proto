@@ -34,6 +34,14 @@ UINT32_FIELDS = {
     "degree", "referenceStateHeaderId",
 }
 
+# Go types forced for specific (struct, field) pairs. The 3.0.0 PDF documents
+# factsheet pauseAllowed/cancelAllowed as booleans but the official JSON schema
+# types them as strings, so vehicles publish either; LenientBool reads both.
+FIELD_TYPE_OVERRIDES = {
+    ("MobileRobotAction", "pauseAllowed"): "LenientBool",
+    ("MobileRobotAction", "cancelAllowed"): "LenientBool",
+}
+
 # Readable names for structs whose auto-derived name is unwieldy or collides.
 # Key = auto-derived name, value = the name actually emitted.
 NAME_OVERRIDES = {
@@ -228,6 +236,8 @@ class Generator:
         for fname, fnode in props.items():
             req = fname in required
             gtype = self.go_type(fnode, name, fname, req)
+            if (name, fname) in FIELD_TYPE_OVERRIDES:
+                gtype = ("" if req else "*") + FIELD_TYPE_OVERRIDES[(name, fname)]
             tag = fname if req else fname + ",omitempty"
             resolved = self.resolve(fnode)
             desc = fnode.get("description") or resolved.get("description", "")
