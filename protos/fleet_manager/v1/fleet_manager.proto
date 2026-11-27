@@ -38,6 +38,7 @@ enum CommandStreamCommands {
     PLATFORM = 13;
     UPDATE_STATION = 14;
     ACKNOWLEDGE_TASK = 15; // GT Studio knob: release a robot waiting in a knob_ack task
+    ANNOUNCE = 16; // herdIQ -> backend -> robot: plain-language status ("why is the robot not moving")
 }
 
 enum CommandStreamActions {
@@ -74,6 +75,9 @@ enum CommandStreamActions {
     UPDATE_ROBOT_CONFIG = 30;
     GET_STATIONS = 31;
     UPDATE_STATIONS = 32;
+    // 33-34 are used on the pms branch (GET_SHELVES / UPDATE_SHELVES).
+    ANNOUNCE_PUSH = 35; // ANNOUNCE: a live announcement (JSON in data)
+    ANNOUNCE_CLEAR = 36; // ANNOUNCE: the announced condition has ended
 }
 
 message CommandStreamRequest {
