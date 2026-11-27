@@ -41,6 +41,7 @@ const (
 	CommandStreamCommands_PLATFORM               CommandStreamCommands = 13
 	CommandStreamCommands_UPDATE_STATION         CommandStreamCommands = 14
 	CommandStreamCommands_ACKNOWLEDGE_TASK       CommandStreamCommands = 15 // GT Studio knob: release a robot waiting in a knob_ack task
+	CommandStreamCommands_ANNOUNCE               CommandStreamCommands = 16 // herdIQ -> backend -> robot: plain-language status ("why is the robot not moving")
 )
 
 // Enum value maps for CommandStreamCommands.
@@ -62,6 +63,7 @@ var (
 		13: "PLATFORM",
 		14: "UPDATE_STATION",
 		15: "ACKNOWLEDGE_TASK",
+		16: "ANNOUNCE",
 	}
 	CommandStreamCommands_value = map[string]int32{
 		"COMMAND_STREAM_UNKNOWN": 0,
@@ -80,6 +82,7 @@ var (
 		"PLATFORM":               13,
 		"UPDATE_STATION":         14,
 		"ACKNOWLEDGE_TASK":       15,
+		"ANNOUNCE":               16,
 	}
 )
 
@@ -146,6 +149,9 @@ const (
 	CommandStreamActions_UPDATE_ROBOT_CONFIG       CommandStreamActions = 30
 	CommandStreamActions_GET_STATIONS              CommandStreamActions = 31
 	CommandStreamActions_UPDATE_STATIONS           CommandStreamActions = 32
+	// 33-34 are used on the pms branch (GET_SHELVES / UPDATE_SHELVES).
+	CommandStreamActions_ANNOUNCE_PUSH  CommandStreamActions = 35 // ANNOUNCE: a live announcement (JSON in data)
+	CommandStreamActions_ANNOUNCE_CLEAR CommandStreamActions = 36 // ANNOUNCE: the announced condition has ended
 )
 
 // Enum value maps for CommandStreamActions.
@@ -184,6 +190,8 @@ var (
 		30: "UPDATE_ROBOT_CONFIG",
 		31: "GET_STATIONS",
 		32: "UPDATE_STATIONS",
+		35: "ANNOUNCE_PUSH",
+		36: "ANNOUNCE_CLEAR",
 	}
 	CommandStreamActions_value = map[string]int32{
 		"COMMAND_ACTION_UNKNOWN":    0,
@@ -219,6 +227,8 @@ var (
 		"UPDATE_ROBOT_CONFIG":       30,
 		"GET_STATIONS":              31,
 		"UPDATE_STATIONS":           32,
+		"ANNOUNCE_PUSH":             35,
+		"ANNOUNCE_CLEAR":            36,
 	}
 )
 
@@ -1711,7 +1721,7 @@ const file_protos_fleet_manager_v1_fleet_manager_proto_rawDesc = "" +
 	"\tslug_name\x18\x01 \x01(\tR\bslugName\x129\n" +
 	"\x04data\x18\x02 \x01(\v2%.v1.fleet_manager.DockerTelemetryDataR\x04data\x12\x16\n" +
 	"\x06status\x18\x03 \x01(\bR\x06status\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage*\x9d\x02\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage*\xab\x02\n" +
 	"\x15CommandStreamCommands\x12\x1a\n" +
 	"\x16COMMAND_STREAM_UNKNOWN\x10\x00\x12\x10\n" +
 	"\fFLOW_EXECUTE\x10\x01\x12\x0f\n" +
@@ -1731,7 +1741,8 @@ const file_protos_fleet_manager_v1_fleet_manager_proto_rawDesc = "" +
 	"\bSETTINGS\x10\f\x12\f\n" +
 	"\bPLATFORM\x10\r\x12\x12\n" +
 	"\x0eUPDATE_STATION\x10\x0e\x12\x14\n" +
-	"\x10ACKNOWLEDGE_TASK\x10\x0f*\x9e\x05\n" +
+	"\x10ACKNOWLEDGE_TASK\x10\x0f\x12\f\n" +
+	"\bANNOUNCE\x10\x10*\xc5\x05\n" +
 	"\x14CommandStreamActions\x12\x1a\n" +
 	"\x16COMMAND_ACTION_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vCANCEL_GOAL\x10\x01\x12\r\n" +
@@ -1770,7 +1781,9 @@ const file_protos_fleet_manager_v1_fleet_manager_proto_rawDesc = "" +
 	"\x19UPDATE_PLATFORM_INSTANCES\x10\x1d\x12\x17\n" +
 	"\x13UPDATE_ROBOT_CONFIG\x10\x1e\x12\x10\n" +
 	"\fGET_STATIONS\x10\x1f\x12\x13\n" +
-	"\x0fUPDATE_STATIONS\x10 *l\n" +
+	"\x0fUPDATE_STATIONS\x10 \x12\x11\n" +
+	"\rANNOUNCE_PUSH\x10#\x12\x12\n" +
+	"\x0eANNOUNCE_CLEAR\x10$*l\n" +
 	"\vHerdActions\x12\x17\n" +
 	"\x13HERD_ACTION_UNKNOWN\x10\x00\x12\n" +
 	"\n" +
